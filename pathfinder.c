@@ -162,9 +162,15 @@ void print_path (graph_t *g, int i) {
         path[n - j - 2] = 'a' + u->prev;
     printf("%d %.*s\n", v->dist, n, path);
 }
+
+paths* findPaths(node* startingNode) {
+    // TODO - Call add_edge for each edge in the graph
+    // TODO - Call dijkstra from the starting node to every other node, then add to list/array
+}
  
 int main () {
     graph_t *g = calloc(1, sizeof (graph_t));
+
     add_edge(g, 'a', 'b', 7);
     add_edge(g, 'a', 'c', 9);
     add_edge(g, 'a', 'f', 14);
