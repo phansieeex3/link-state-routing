@@ -174,7 +174,19 @@ int main () {
     add_edge(g, 'c', 'f', 2);
     add_edge(g, 'd', 'e', 6);
     add_edge(g, 'e', 'f', 9);
+    
+    dijkstra(g, 'a', 'a');
+    print_path(g, 'a');
+    dijkstra(g, 'a', 'b');
+    print_path(g, 'b');
+    dijkstra(g, 'a', 'c');
+    print_path(g, 'c');
+    dijkstra(g, 'a', 'd');
+    print_path(g, 'd');
     dijkstra(g, 'a', 'e');
     print_path(g, 'e');
+    dijkstra(g, 'a', 'f');
+    print_path(g, 'f');
+    
     return 0;
 }
