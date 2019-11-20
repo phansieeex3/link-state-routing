@@ -316,6 +316,10 @@ void* monitorNeighbors(void* unusedParam) {
 }
 
 
+short int getDestination(char* buff) {
+	short int ip = ntohs(*((short int*)(buff + 4)));
+	return ip;
+}
 
 void listenForNeighbors()
 {
@@ -335,16 +339,19 @@ void listenForNeighbors()
 			exit(1);
 		}
 		
+		void* data_pt = (void*) recvBuf;
+
+		short int destID = getDestination(data_pt);
+
 		inet_ntop(AF_INET, &theirAddr.sin_addr, fromAddr, 100);
 		
 		short int heardFrom = -1;
 		if(strstr(fromAddr, "10.1.1."))
 		{
-			heardFrom = atoi(
-					strchr(strchr(strchr(fromAddr,'.')+1,'.')+1,'.')+1);
+			heardFrom = atoi(strchr(strchr(strchr(fromAddr,'.')+1,'.')+1,'.')+1);
 			
 			pthread_mutex_lock(&list_m);
-			if(!linkedlist_contains(first_neighbor, heardFrom)) { // or sequence is higher.....
+			if(!contains(first_neighbor, heardFrom)) { // or sequence is higher.....
 				//printf("setup node %d\n", heardFrom);
 				setupNode(heardFrom); 
 			}
@@ -359,23 +366,81 @@ void listenForNeighbors()
 		//send format: 'send'<4 ASCII bytes>, destID<net order 2 byte signed>, <some ASCII message>
 		if(!strncmp(recvBuf, "send", 4))
 		{
-			//TODO send the requested message to the requested destination node
-			// ALLOCATE SPAE FOR MSH
-			//if my packet , print i have received
+			//send format: 'send'<4 ASCII bytes>, destID<net order 2 byte signed>, <some ASCII message>
+			char* message = recvBuf + 4 + sizeof(short int) ; // message on the rest
+//run diks***************
+			if(destID == globalMyID) {
+				printf("got my message, thanks bye %s\n", message);
+			}
+			else {
+				//find shortest path within my graph
+				//run Shortest path algo
+//run diks***************
+				char* sending_data = malloc(sizeof(bytesRecvd));
+				memcpy(message, "dest");
+				short int destID_forward = htons(destID);
+	   			 memcpy(sending_data + 4, &destID_forward, sizeof(short int));
+	   		 	memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
 
-			//else send to destination
+				//if(contains(topology, destID) < 0) "destination unreachable"
+				if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[next_neighbor], sizeof(globalNodeAddrs[next_neighbor])) < 0) perror("cannot send message in send");
+	   			 sprintf(logLine, "send dest %d nexthop %d message %s\n", destID, next_neighbor, message);
+	 			 }
+
+
+		}
+		else if(!strncmp(recvBuf, "dest", 4)) {
+			//TODO send the requested message to the requested destination node
+			// ALLOCATE SPACE FOR MSH
+			//if my packet , print i have received
+			char* message = recvBuf + 4 + sizeof(short int) ; // message on the rest
+
+			if(destID == globalMyID) {
+				printf("got my message, thanks bye %\n", message);
+			}
+			else {
+				//else send to destination
 			//caclulate path with dijstra
+					//run diks***************
+				char* sending_data = malloc(sizeof(bytesRecvd));
+				memcpy(message, "dest");
+				short int destID_forward = htons(destID);
+	   			 memcpy(sending_data + 4, &destID_forward, sizeof(short int));
+	   		 	memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
+
+				//if(contains(topology, destID) < 0) "destination unreachable"
+				if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[next_neighbor], sizeof(globalNodeAddrs[next_neighbor])) < 0) perror("cannot send message in send");
+	   			 sprintf(logLine, "send dest %d nexthop %d message %s\n", destID, next_neighbor, message);
+	 			 }
 			//convert ip address 
 			//check if in table and part of my toplogy
 			//if not then it is untreachable then log it
 
 			//else
 			//try to sendto destination and log it
+
+
+			}
+
+			
+
 		}
 		//'weight'<4 ASCII bytes>, destID<net order 2 byte signed> newweight<net order 4 byte signed>
 		//new weight to your neighbor
 		else if(!strncmp(recvBuf, "cost", 4)) {
 			//update my neighbors with new cost
+			int new_weight = ntohl(*(int*)(data_pt + 4 + sizeof(short int)));
+			neighbor_node* curNeighbor;
+
+			if((curNeighbor = (neighbor_node*) getNeighbor(first_neighbor, destID)) != NULL) {
+				
+				curNeighbor->neighbor_weight->weight = new_weight;
+				updateLSAtoNeighbors(-1);
+			}
+			else {
+				curNeighbor = setNeighbor(destID, new_weight);
+				first_down_neighbor = update(first_down_neighbor, destID, curNeighbor);
+			}
 
 			//if node cost contains in list then replace with new node cost
 			//delete neighbor, insert new neighbor with it's new cost
@@ -388,6 +453,22 @@ void listenForNeighbors()
 			//get lsa information
 			//if new LSA or sequence is greater than my current sequence
 			//forward my LSA
+		
+			LSA* new_LSA = convertLSA(data_pt);
+
+			int LSA_id = new_LSA->node_ID;
+
+			int LSA_neigh_size = new_LSA->neighbor_size;
+			int LSA_sequence_number = new_LSA->sequence_number;
+			if(LSA_list[LSA_id] == NULL or LSA_sequence_number < getSequenceNum(data_pt)) 
+			{
+				LSA_list[LSA_id] = new_LSA;
+				forwardLSP(recvBuf, bytesRecvd, heardFrom);
+
+			}
+			
+			//fflush(fp);
+    }
 
 		}
 		

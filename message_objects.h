@@ -1,5 +1,4 @@
 
-
 //link state node that contains information of chain
 typedef struct _link_state_node {
   int destination_ID;
@@ -35,7 +34,7 @@ typedef struct _LSA {
 node* setNode(int next_node, int weight) {
   node* new_weight = (node*)malloc(sizeof(node));
   (*new_weight).next_hop = next_node;
-  (*new_weight).cost = cost;
+  (*new_weight).weight = weight;
   return new_weight;
 }
 neighbor_node* setneighbor(int next_node, int weight) {
