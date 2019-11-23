@@ -424,7 +424,7 @@ void listenForNeighbors()
 
 			
 
-		}
+		
 		//'weight'<4 ASCII bytes>, destID<net order 2 byte signed> newweight<net order 4 byte signed>
 		//new weight to your neighbor
 		else if(!strncmp(recvBuf, "cost", 4)) {
