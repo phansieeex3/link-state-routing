@@ -163,14 +163,20 @@ void print_path (graph_t *g, int i) {
     printf("%d %.*s\n", v->dist, n, path);
 }
 
-paths* findPaths(node* startingNode) {
-    // TODO - Call add_edge for each edge in the graph
-    // TODO - Call dijkstra from the starting node to every other node, then add to list/array
-}
- 
-int main () {
-    graph_t *g = calloc(1, sizeof (graph_t));
+typedef struct {
+    int id;
+    
+} path;
 
+typedef struct {
+    int id;
+} node;
+
+
+void findPaths(node* startingNode, path** paths) {
+    // TODO - Free initial memory from paths
+    graph_t *g = calloc(1, sizeof (graph_t));
+    
     add_edge(g, 'a', 'b', 7);
     add_edge(g, 'a', 'c', 9);
     add_edge(g, 'a', 'f', 14);
@@ -193,6 +199,27 @@ int main () {
     print_path(g, 'e');
     dijkstra(g, 'a', 'f');
     print_path(g, 'f');
+    
+    // Return a list/array of paths from ^^^
+    
+    
+    /*
+    // TODO - Call add_edge for each edge in the graph
+    int edgeCount = 0;
+    for (int i = 0; i < edgeCount; i++) {
+        
+    }
+    // TODO - Call dijkstra from the starting node to every other node, then add to list/array
+    */
+}
+ 
+int main () {
+    node *myNode = calloc(1, sizeof (node));
+    // Need a method to calculate this 
+    int numNodes = 6;
+    path **paths = calloc(numNodes, sizeof (path));
+    
+    findPaths(myNode, paths);
     
     return 0;
 }
