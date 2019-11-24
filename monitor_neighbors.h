@@ -14,7 +14,7 @@
 
 
 extern int globalMyID;
-//last time you heard from each node. TODO: you will want to monitor this
+//last time you heard from each neighbor_node. TODO: you will want to monitor this
 //in order to realize when a neighbor has gotten cut off from you.
 extern struct timeval globalLastHeartbeat[256];
 
@@ -24,14 +24,15 @@ extern int globalSocketUDP;
 extern struct sockaddr_in globalNodeAddrs[256];
 
 
-//neighbor node 
+//neighbor neighbor_node 
 extern neighbor_node* root_neighbor;
 extern int neighbor_number;
 extern neighbor_node* next_neighbor;
 extern int neighbor_size;
 extern int sequence_number;
 
-extern node** weight_table;
+
+extern neighbor_node** weight_table;
 extern char* file_path;
 
 LSA** LSA_link_list; 
@@ -50,13 +51,13 @@ pthread_mutex_t sequence_number_thread = PTHREAD_MUTEX_INITIALIZER;
 
 //set my neighbor if received
 
-node* setNeighbor(int next_node, int weight);
-//setting my node
-node* setNode(int next_node, int weight);
+neighbor_node* setNeighbor(int next_node, int weight);
+//setting my neighbor_node
+neighbor_node* setNode(int next_node, int weight);
 
 
-int contains(node* root, int neighbor_id) {
-  node* current = root;
+int contains(neighbor_node* root, int neighbor_id) {
+  neighbor_node* current = root;
   while(current != NULL) {
     if(current->neighbor_weight->next_node == neighbor_id) {
       return 1;
@@ -67,7 +68,7 @@ int contains(node* root, int neighbor_id) {
 }
 
 //inserting my new neighbors in my link list
-node* insert(node* root, node* new_node) {
+neighbor_node* insert(neighbor_node* root, neighbor_node* new_node) {
 
 	new_node->next = NULL;
 	new_node->prev = NULL;
@@ -88,11 +89,11 @@ node* insert(node* root, node* new_node) {
 
 
 }
-//deleting a node
-node* delete(node* root, int neighbor_id) {
-  node* current = root;
+//deleting a neighbor_node
+neighbor_node* delete(neighbor_node* root, int neighbor_id) {
+  neighbor_node* current = root;
   while(current != NULL) {
-    if(current->neighbor_weight->node == neighbor_id) {
+    if(current->neighbor_weight->neighbor_node == neighbor_id) {
 
       if(current->prev == NULL) {
 		root = current->next;
@@ -112,14 +113,14 @@ node* delete(node* root, int neighbor_id) {
   return 
 
 //get my neighbor 
-node* getNeighbor(node* root, int neighbor_add) {
+neighbor_node* getNeighbor(neighbor_node* root, int neighbor_add) {
 	//dummy pointer
-  node* current = root;
+  neighbor_node* current = root;
 
 	//looping through my list
   while(current != NULL) { //while not the end of my linklist
 
-    if(current->neighbor_weight->node == neighbor_add) {
+    if(current->neighbor_weight->neighbor_node == neighbor_add) {
       return current;
     }
     current = current->next;
@@ -130,7 +131,7 @@ node* getNeighbor(node* root, int neighbor_add) {
 root;
 }
 
-link_state_node* createNode(int destination, int node, int prev_node, int weight) {
+link_state_node* createNode(int destination, int neighbor_node, int prev_node, int weight) {
   link_state_node* lsn = (link_state_node*)malloc(sizeof(link_state_node));
     lsn->prev_node = prev_node;
  //weight
@@ -138,7 +139,7 @@ link_state_node* createNode(int destination, int node, int prev_node, int weight
 //destination id
   lsn->destination_ID = destination;
   //next
-  lsn->node = node;
+  lsn->neighbor_node = neighbor_node;
   
  
   return lsn;
@@ -172,7 +173,7 @@ if (recvBuf !=NULL) printf("resume, recvbuf %s", recvBuf);
 void* updateLSAtoNeighbors(int neighbor) {
   char* sendBuf = parseLSA();
 
-  int buf = neighbor * sizeof(node)+ 3 + sizeof(int) + sizeof(int) + sizeof(int) + sizeof(int) 
+  int buf = neighbor * sizeof(neighbor_node)+ 3 + sizeof(int) + sizeof(int) + sizeof(int) + sizeof(int) 
   neighbor_node* current = root_neighbor; //first neighbor in our list
 
   while(current != NULL) {
@@ -190,7 +191,7 @@ void* updateLSAtoNeighbors(int neighbor) {
 
 	  }
 
-	  //incurrement my current node
+	  //incurrement my current neighbor_node
 	  current = current->next;
   }
   sequence_number +=1;
@@ -200,7 +201,7 @@ void* updateLSAtoNeighbors(int neighbor) {
 }
 
   
-// message format LSA : id, sequence, neigh, node (next_node, weight) format
+// message format LSA : id, sequence, neigh, neighbor_node (next_node, weight) format
 
 //convert LSAs
 LSA* convertLSA(void* buff) {
@@ -215,15 +216,15 @@ LSA* convertLSA(void* buff) {
 	int neighbor_size = ntohl(*((int*) (buff + 3 + 2 * sizeof(int))));
 	lsa->neighbor_size(neighbor_size);
 
-	//create neighbor node list
+	//create neighbor neighbor_node list
 	neighbor_node* neighbor_list = neighbor_size * malloc(sizeof(_neighbor_node));
 	lsa->neighbor = NULL; 
 
 	int i = 0;
 
 	for(i; i< neighbor_size; i++) {
-	int next_node = ((node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(node)))->next_node;
-    int neigh_weight = ((node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(node)))->weight;
+	int next_node = ((neighbor_node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node)))->next_node;
+    int neigh_weight = ((neighbor_node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node)))->weight;
     lsa->first_neighbor = insert(lsa->first_neighbor, setneighbor(next_node, neigh_weight));
 
 	}
@@ -234,13 +235,13 @@ LSA* convertLSA(void* buff) {
 
 }
 
-// message format LSA : id, sequence, neigh, node (next_node, weight) format
+// message format LSA : id, sequence, neigh, neighbor_node (next_node, weight) format
 /*
 LSA* parseLSAforReceving(void* buff) {
 
   LSA* lsp = (LSA*)malloc(sizeof(LSA));
  lsa->neighbor_size = ntohl(*((int*)(buff + 3 + 2 * sizeof(int))));
- //id, sequence, neighbor number, node
+ //id, sequence, neighbor number, neighbor_node
   lsp->node_id = ntohl(*((int*)(buff + 3)));
   lsa->sequence_num = getSequenceNum(buff);
 
@@ -249,8 +250,8 @@ LSA* parseLSAforReceving(void* buff) {
   	int i = 0;
 
 	for(i; i< neighbor_size; i++) {
-	int next_node = ((node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(node)))->next_node;
-    int neigh_weight = ((node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(node)))->weight;
+	int next_node = ((neighbor_node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node)))->next_node;
+    int neigh_weight = ((neighbor_node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node)))->weight;
     lsa->first_neighbor = insert(lsa->first_neighbor, setneighbor(next_node, neigh_weight));
 
 	}
@@ -259,7 +260,7 @@ LSA* parseLSAforReceving(void* buff) {
 
 
 
-node* uppdate(node* root, int neigbor_add, node* new_node) {
+neighbor_node* uppdate(neighbor_node* root, int neigbor_add, neighbor_node* new_node) {
   root = delete(root, neigbor_add);
   root = insert(root, new_node);
   return root;
@@ -285,7 +286,7 @@ void* announceToNeighbors(void* unusedParam)
    while(1)
     {
       char* sendBuf = convertLSA(-1);
-      int bufLen = 3 + sizeof(int) + sizeof(int) + sizeof(int) + neighbor_size * sizeof(node);
+      int bufLen = 3 + sizeof(int) + sizeof(int) + sizeof(int) + neighbor_size * sizeof(neighbor_node);
       hackyBroadcast(sendBuf, bufLen);
       pthread_mutex_lock(&sequence_num_m);
       sequence_num++;
@@ -301,7 +302,7 @@ void* monitorNeighbors(void* unusedParam) {
   sleepFor.tv_nsec = 650 * 1000 * 1000; //650 ms
   while(1)
     {
-      node* current = first_neighbor;
+      neighbor_node* current = first_neighbor;
       struct timeval tempTime;
       while(current != NULL) {
 	int neighbor_id = current->neighbor_weight->next_node;
@@ -352,11 +353,11 @@ void listenForNeighbors()
 			
 			pthread_mutex_lock(&list_m);
 			if(!contains(first_neighbor, heardFrom)) { // or sequence is higher.....
-				//printf("setup node %d\n", heardFrom);
+				//printf("setup neighbor_node %d\n", heardFrom);
 				setupNode(heardFrom); 
 			}
 			pthread_mutex_unlock(&list_m);
-					//TODO: this node can consider heardFrom to be directly connected to it; do any such logic now.
+					//TODO: this neighbor_node can consider heardFrom to be directly connected to it; do any such logic now.
 			
 			//record that we heard from heardFrom just now.
 			gettimeofday(&globalLastHeartbeat[heardFrom], 0);
@@ -384,13 +385,13 @@ void listenForNeighbors()
 
 				//if(contains(topology, destID) < 0) "destination unreachable"
 				if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[next_neighbor], sizeof(globalNodeAddrs[next_neighbor])) < 0) perror("cannot send message in send");
-	   			 sprintf(logLine, "send dest %d nexthop %d message %s\n", destID, next_neighbor, message);
+	   			 sprintf(logLine, "send dest %d nexthop %d message %s\n", destID_forward, next_neighbor, message);
 	 			 }
 
 
 		}
 		else if(!strncmp(recvBuf, "dest", 4)) {
-			//TODO send the requested message to the requested destination node
+			//TODO send the requested message to the requested destination neighbor_node
 			// ALLOCATE SPACE FOR MSH
 			//if my packet , print i have received
 			char* message = recvBuf + 4 + sizeof(short int) ; // message on the rest
@@ -442,10 +443,10 @@ void listenForNeighbors()
 				first_down_neighbor = update(first_down_neighbor, destID, curNeighbor);
 			}
 
-			//if node cost contains in list then replace with new node cost
+			//if neighbor_node cost contains in list then replace with new neighbor_node cost
 			//delete neighbor, insert new neighbor with it's new cost
 
-			//if not contains then add new neighbor and node cost
+			//if not contains then add new neighbor and neighbor_node cost
 
 		}
 

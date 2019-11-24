@@ -20,7 +20,7 @@ typedef struct {
  
  //routing table?
 typedef struct {
-    vertex_t **vertices; //rputing table
+    vertex_t **vertices; //routing table table
     int vertices_len;
     int vertices_size;
 } graph_t;

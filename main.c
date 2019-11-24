@@ -15,7 +15,7 @@ void* monitorNeighbors(void* unusedParam);
 
 const int MAX = 256;  
 int globalMyID = 0;
-//last time you heard from each node. TODO: you will want to monitor this
+//last time you heard from each neighbor_node. TODO: you will want to monitor this
 //in order to realize when a neighbor has gotten cut off from you.
 struct timeval globalLastHeartbeat[MAX];
 
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
 //0 ./run, 1 mynodeid, 2 initialcostsfile, 3 logfile
     filename = argv[3];
 
-	//initialization: get this process's node ID, record what time it is, 
+	//initialization: get this process's neighbor_node ID, record what time it is, 
 	//and set up our sockaddr_in's for sending to the other nodes.
 	globalMyID = atoi(argv[1]);
 	int i = 0;
@@ -68,16 +68,16 @@ int main(int argc, char** argv)
 	
 	
 
-  node** routing_table;
+  neighbor_node** routing_table;
 	//creating my routing table
-	routing_table = (node**)malloc(MAX*sizeof(node*));
+	routing_table = (neighbor_node**)malloc(MAX*sizeof(neighbor_node*));
 	int j = 0;
 	for(; j < MAX; j++) {
 		routing_table[j] = NULL; //maximum size routing table
 	}
 	
 	
-//TODO: read and parse initial costs file. default to cost 1 if no entry for a node. file may be empty.
+//TODO: read and parse initial costs file. default to cost 1 if no entry for a neighbor_node. file may be empty.
      neighbor_node* first_neighbor = NULL;
 
 	char buff[1024];
