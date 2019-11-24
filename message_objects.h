@@ -1,12 +1,15 @@
 
-//link state node that contains information of chain
+#include <stdio.h>
+#include <stdlib.h>//link state node that contains information of chain
+
+
 typedef struct _link_state_node {
   int destination_ID; //vertex
  // int next_node;
  //int prev_node;
  // int weight; //edge
   //size_t pos;
-  neighbor_nodes 
+  neighbor_list* neighbor_nodes;
 } link_state_node;
 
 //my current node or all nodes
