@@ -27,8 +27,9 @@ struct sockaddr_in globalNodeAddrs[MAX];
 
 
 
-
-
+//my link list root
+neighbor_list* first_neighbor;
+neighbor_list* first_down_neighbor;
 
 
 

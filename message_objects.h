@@ -12,7 +12,7 @@ typedef struct _neighbor_node {
 //my neighbor node
 typedef struct _neighbor_list {
     struct _neighbor_list* next;
-  //struct _neighbor_node* prev;
+  struct _neighbor_list* prev;
   neighbor_node* neighbor_weight; 
 } neighbor_list;
 
