@@ -3,6 +3,20 @@
 #include <stdlib.h>//link state node that contains information of chain
 
 
+//my current node or all nodes
+typedef struct _neighbor_node {
+  int next_node; // vertex
+  int weight; //edge
+} neighbor_node;
+
+//my neighbor node
+typedef struct _neighbor_list {
+    struct _neighbor_list* next;
+  //struct _neighbor_node* prev;
+  neighbor_node* neighbor_weight; 
+} neighbor_list;
+
+
 typedef struct _link_state_node {
   int destination_ID; //vertex
  // int next_node;
@@ -12,19 +26,9 @@ typedef struct _link_state_node {
   neighbor_list* neighbor_nodes;
 } link_state_node;
 
-//my current node or all nodes
-typedef struct _neighbor_node {
-  int next_node; // vertex
-  int weight; //edge
-} neighbor_node;
 
 
-//my neighbor node
-typedef struct _neighbor_list {
-    struct _neighbor_list* next;
-  //struct _neighbor_node* prev;
-  neighbor_node* neighbor_weight; 
-} neighbor_list;
+
 
 //link state announcement
 typedef struct _LSA {
