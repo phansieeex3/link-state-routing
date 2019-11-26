@@ -9,7 +9,7 @@ typedef struct _neighbor_node {
   int weight; //edge
 } neighbor_node;
 
-//my neighbor node
+//my neighbor node list
 typedef struct _neighbor_list {
     struct _neighbor_list* next;
   struct _neighbor_list* prev;
@@ -17,6 +17,7 @@ typedef struct _neighbor_list {
 } neighbor_list;
 
 
+//link state node graph
 typedef struct _link_state_node {
   int destination_ID; //vertex
  // int next_node;

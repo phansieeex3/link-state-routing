@@ -3,14 +3,16 @@
 #include <pthread.h>
 
 #include "monitor_neighbors.h"
+#include "monitor_neighbors.c"
 
 
+//function calls for different threads
 void listenForNeighbors();
 void* announceToNeighbors(void* unusedParam);
-
-//new functions
-void* announceToNeighbors(void* unusedParam);
-void* monitorNeighbors(void* unusedParam);
+void* monitorNeighborsAlive(void* unusedParam);
+neighbor_list* setneighbor(int next_node, int weight);
+neighbor_node* setNode(int next_hop, int cost);
+neighbor_list* insert(neighbor_list* head, neighbor_node* new_node);
 
 
 const int MAX = 256;  
@@ -29,7 +31,7 @@ struct sockaddr_in globalNodeAddrs[MAX];
 
 //my link list root
 neighbor_list* first_neighbor;
-neighbor_list* first_down_neighbor;
+neighbor_list* first_next_neighbor;
 
 
 
@@ -45,7 +47,7 @@ int main(int argc, char** argv)
 		exit(1);
 	}
 	
-	
+
 
 //0 ./run, 1 mynodeid, 2 initialcostsfile, 3 logfile
     filename = argv[3];
@@ -79,11 +81,11 @@ int main(int argc, char** argv)
 	
 	
 //TODO: read and parse initial costs file. default to cost 1 if no entry for a neighbor_node. file may be empty.
-     neighbor_node* first_neighbor = NULL;
+     first_neighbor = NULL;
 
 	char buff[1024];
 
-	neighbor_node* first_down_neighbor = NULL;
+	first_next_neighbor = NULL;
 
 	FILE* initialcostsfile = fopen(argv[2], "r");
 	 
@@ -94,7 +96,7 @@ int main(int argc, char** argv)
 		int weight;
 		int uuid;
 
-		printf("inputing my weights...")
+		printf("inputing my weights...");
 		//end of file, should break from forever loop
 		if(fgets(buff, 1024, initialcostsfile) == NULL) 
 		{
@@ -103,7 +105,7 @@ int main(int argc, char** argv)
 		
 		sscanf(buff, "%d %d", &uuid, &weight);
 		//save my weights and neighbors in a linklist
-		first_down_neighbor = insert(first_down_neighbor, setneighbor(uuid, weight));
+		first_next_neighbor = insert(first_next_neighbor, setneighbor(uuid, weight));
 	}
 	//socket() and bind() our socket. We will do all sendto()ing and recvfrom()ing on this one.
 	if((globalSocketUDP=socket(AF_INET, SOCK_DGRAM, 0)) < 0)
@@ -132,7 +134,7 @@ int main(int argc, char** argv)
   	pthread_t monitorThread;
  	pthread_create(&monitorThread, 0, monitorNeighbors, (void*)0);
 		
-  	//good luck, have fun!
+  	//good luck, have fun! 
  	 listenForNeighbors();
 	
 	
