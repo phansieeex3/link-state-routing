@@ -12,7 +12,7 @@ void* announceToNeighbors(void* unusedParam);
 void* monitorNeighborsAlive(void* unusedParam);
 neighbor_list* setneighbor(int next_node, int weight);
 neighbor_node* setNode(int next_hop, int cost);
-neighbor_list* insert(neighbor_list* head, neighbor_node* new_node);
+neighbor_list* insert(neighbor_list* head, neighbor_list* new_node);
 
 
 const int MAX = 256;  
