@@ -1,7 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <limits.h>
- 
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <limits.h>
+#include "message_objects.h"
+#include "pathfinder.h"
+
+/*
 typedef struct {
     int vertex;
     int weight;
@@ -163,18 +166,21 @@ void print_path (graph_t *g, int i) {
     printf("%d %.*s\n", v->dist, n, path);
 }
 
-typedef struct {
-    int id;
-    
-} path;
+*/
 
-typedef struct {
-    int id;
-} node;
+// Uses Dijikstra's shortest path routing algorithm to find the shortest path to each other node
+int findPaths(link_state_node* localNode, pathList **paths) {
+    // Free existing paths
+    pathList *current = *paths;
+    while (current != NULL) {
+        free(current->path);
+        pathList *prev = current;
+        current = current->next;
+        free (prev);
+    }
 
-
-void findPaths(node* startingNode, path** paths) {
-    // TODO - Free initial memory from paths
+    /*
+    // Initial Graph generation
     graph_t *g = calloc(1, sizeof (graph_t));
     
     add_edge(g, 'a', 'b', 7);
@@ -199,27 +205,96 @@ void findPaths(node* startingNode, path** paths) {
     print_path(g, 'e');
     dijkstra(g, 'a', 'f');
     print_path(g, 'f');
-    
-    // Return a list/array of paths from ^^^
-    
-    
-    /*
-    // TODO - Call add_edge for each edge in the graph
-    int edgeCount = 0;
-    for (int i = 0; i < edgeCount; i++) {
-        
+
+
+    /* 
+
+    pathList *head = NULL;
+    head = malloc(sizeof(pathList));
+    if (head == NULL) {
+        return 1;
     }
-    // TODO - Call dijkstra from the starting node to every other node, then add to list/array
+
+    // Path 1
+    path *path1 = NULL;
+    path1 = malloc(sizeof(path));
+    if (path1 == NULL) {
+        return 1;
+    }
+    path1->destination_id = 2;
+    path1->neighbor_id = 2;
+
+    // Path 2
+    path *path2 = NULL;
+    path2 = malloc(sizeof(path));
+    if (path2 == NULL) {
+        return 1;
+    }
+    path2->destination_id = 3;
+    path2->neighbor_id = 3;
+
+    // Path 3
+    path *path3 = NULL;
+    path3 = malloc(sizeof(path));
+    if (path3 == NULL) {
+        return 1;
+    }
+    path3->destination_id = 4;
+    path3->neighbor_id = 3;
+
+    // Path 4
+    path *path4 = NULL;
+    path4 = malloc(sizeof(path));
+    if (path4 == NULL) {
+        return 1;
+    }
+    path4->destination_id = 5;
+    path4->neighbor_id = 3;
+
+    // Path 5
+    path *path5 = NULL;
+    path5 = malloc(sizeof(path));
+    if (path5 == NULL) {
+        return 1;
+    }
+    path5->destination_id = 6;
+    path5->neighbor_id = 3;
+    
+    pathList *current = head;
+    current->path = path1;
+    current->next = malloc(sizeof(pathList));
+    current = current->next;
+    current->path = path2;
+    current->next = malloc(sizeof(pathList));
+    current = current->next;
+    current->path = path3;
+    current->next = malloc(sizeof(pathList));
+    current = current->next;
+    current->path = path4;
+    current->next = malloc(sizeof(pathList));
+    current = current->next;
+    current->path = path5;
+
+    *paths = head;
+
     */
+
+    return 0;
 }
  
 int main () {
-    node *myNode = calloc(1, sizeof (node));
+    link_state_node *localNode = calloc(1, sizeof (link_state_node));
     // Need a method to calculate this 
-    int numNodes = 6;
-    path **paths = calloc(numNodes, sizeof (path));
+    int numNodes = 1000;
+    pathList *paths;
     
-    findPaths(myNode, paths);
+    findPaths(localNode, &paths);
+    if (paths == NULL) {
+        return -1;
+    }
     
+    printf("%d\n", paths->path->destination_id);
+    printf("%d\n", paths->next->path->destination_id);
+
     return 0;
 }
