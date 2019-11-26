@@ -19,6 +19,33 @@
 neighbor_list* first_neighbor;
 neighbor_list* first_next_neighbor;
 
+neighbor_node* setNeighbor(int id, int weight) {
+    neighbor_node* new_node = (neighbor_node*) malloc(sizeof(neighbor_node));
+    new_node->id = id;
+    new_node->weight = weight;
+
+    return new_node;
+
+}
+
+neighbor_list* setNeighborList(int id, int weight) {
+
+    //neighbor_node* new_node = (neighbor_node*) malloc(sizeof(neighbor_node));
+    neighbor_list* list = (neighbor_list*) malloc(sizeof(neighbor_list));
+    list->next = NULL;
+    list->prev = NULL;
+   
+    neighbor_node* neighbor = setNeighbor(id, weight);
+
+    //adding my neighbor
+    list->neighbor_node = neighbor;
+
+    return list;
+
+}
+
+
+
 int contains(neighbor_list* root, int neighbor_id) {
   neighbor_list* current = root;
   while(current != NULL) {
@@ -29,6 +56,8 @@ int contains(neighbor_list* root, int neighbor_id) {
   }
   return 0;
 }
+
+
 
 //inserting my new neighbors in my link list
 neighbor_list* insert(neighbor_list* root, neighbor_list* new_node) {
@@ -51,6 +80,23 @@ neighbor_list* insert(neighbor_list* root, neighbor_list* new_node) {
 	return root;
 
 
+}
+
+//get my neighbor 
+neighbor_list* getNeighbor(neighbor_list* root, int neighbor_add) {
+	//dummy pointer
+  neighbor_list* current = root;
+
+	//looping through my list
+  while(current != NULL) { //while not the end of my linklist
+
+    if(current->neighbor_node->id == neighbor_add) {
+      return current;
+    }
+    current = current->next;
+  }
+
+	return root;
 }
 //deleting a neighbor_node
 neighbor_list* delete(neighbor_list* root, int neighbor_id) {
@@ -79,7 +125,7 @@ neighbor_list* delete(neighbor_list* root, int neighbor_id) {
 
 //update
 neighbor_list* update(neighbor_list* head, int neighbor_id, neighbor_node* new_node) {
-  head = delete(head, neighbor_id);
+  head = delete(head, neighbor_id); //delete and insert new info
   head = insert(head, new_node);
   return head;
 }
@@ -88,27 +134,12 @@ neighbor_list* update(neighbor_list* head, int neighbor_id, neighbor_node* new_n
   //printf("root == NULL %d\n", root == NULL);
    
 
-//get my neighbor 
-neighbor_list* getNeighbor(neighbor_list* root, int neighbor_add) {
-	//dummy pointer
-  neighbor_list* current = root;
-
-	//looping through my list
-  while(current != NULL) { //while not the end of my linklist
-
-    if(current->neighbor_node->id == neighbor_add) {
-      return current;
-    }
-    current = current->next;
-  }
-
-	return root;
-}
 
 
 
 
-link_state_node* createNode(int destination, int neighbor_node, int prev_node, int weight) {
+
+link_state_node* createLinkStateNode(int destination, int neighbor_node, int prev_node, int weight) {
   link_state_node* lsn = (link_state_node*)malloc(sizeof(link_state_node));
     lsn->neighbor_nodes->prev = prev_node;
  //weight
