@@ -169,7 +169,8 @@ void print_path (graph_t *g, int i) {
 */
 
 // Uses Dijikstra's shortest path routing algorithm to find the shortest path to each other node
-int findPaths(link_state_node* localNode, pathList **paths) {
+pathList* findPaths(link_state_node* localNode) {
+    /*
     // Free existing paths
     pathList *current = *paths;
     while (current != NULL) {
@@ -177,7 +178,7 @@ int findPaths(link_state_node* localNode, pathList **paths) {
         pathList *prev = current;
         current = current->next;
         free (prev);
-    }
+    }*/
 
     /*
     // Initial Graph generation
@@ -206,20 +207,19 @@ int findPaths(link_state_node* localNode, pathList **paths) {
     dijkstra(g, 'a', 'f');
     print_path(g, 'f');
 
-
-    /* 
+    */
 
     pathList *head = NULL;
     head = malloc(sizeof(pathList));
     if (head == NULL) {
-        return 1;
+        return NULL;
     }
 
     // Path 1
     path *path1 = NULL;
     path1 = malloc(sizeof(path));
     if (path1 == NULL) {
-        return 1;
+        return NULL;
     }
     path1->destination_id = 2;
     path1->neighbor_id = 2;
@@ -228,7 +228,7 @@ int findPaths(link_state_node* localNode, pathList **paths) {
     path *path2 = NULL;
     path2 = malloc(sizeof(path));
     if (path2 == NULL) {
-        return 1;
+        return NULL;
     }
     path2->destination_id = 3;
     path2->neighbor_id = 3;
@@ -237,7 +237,7 @@ int findPaths(link_state_node* localNode, pathList **paths) {
     path *path3 = NULL;
     path3 = malloc(sizeof(path));
     if (path3 == NULL) {
-        return 1;
+        return NULL;
     }
     path3->destination_id = 4;
     path3->neighbor_id = 3;
@@ -246,7 +246,7 @@ int findPaths(link_state_node* localNode, pathList **paths) {
     path *path4 = NULL;
     path4 = malloc(sizeof(path));
     if (path4 == NULL) {
-        return 1;
+        return NULL;
     }
     path4->destination_id = 5;
     path4->neighbor_id = 3;
@@ -255,7 +255,7 @@ int findPaths(link_state_node* localNode, pathList **paths) {
     path *path5 = NULL;
     path5 = malloc(sizeof(path));
     if (path5 == NULL) {
-        return 1;
+        return NULL;
     }
     path5->destination_id = 6;
     path5->neighbor_id = 3;
@@ -275,20 +275,12 @@ int findPaths(link_state_node* localNode, pathList **paths) {
     current = current->next;
     current->path = path5;
 
-    *paths = head;
-
-    */
-
-    return 0;
+    return head;
 }
  
 int main () {
     link_state_node *localNode = calloc(1, sizeof (link_state_node));
-    // Need a method to calculate this 
-    int numNodes = 1000;
-    pathList *paths;
-    
-    findPaths(localNode, &paths);
+    pathList *paths = findPaths(localNode);
     if (paths == NULL) {
         return -1;
     }
