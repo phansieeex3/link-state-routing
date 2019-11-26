@@ -62,9 +62,6 @@ int contains(neighbor_list* root, int neighbor_id) {
 //inserting my new neighbors in my link list
 neighbor_list* insert(neighbor_list* root, neighbor_list* new_node) {
 
-	new_node->next = NULL;
-	new_node->prev = NULL;
-	//begin my link list
 	if(root == NULL) {
 		root = new_node;
 	}
