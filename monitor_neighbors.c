@@ -19,6 +19,7 @@
 //my link list root
 neighbor_list* first_neighbor;
 neighbor_list* first_next_neighbor;
+link_state_node* topology;
 
 neighbor_node* setNeighbor(int id, int weight) {
     neighbor_node* new_node = (neighbor_node*) malloc(sizeof(neighbor_node));
@@ -140,7 +141,6 @@ neighbor_list* update(neighbor_list* head, int neighbor_id, neighbor_node* new_n
 
 
 
-
 link_state_node* create_link_state_node(int destination, neighbor_list* neighbor_list) {
   link_state_node* lsn = (link_state_node*)malloc(sizeof(link_state_node));
     lsn->destination_ID = destination;
@@ -149,6 +149,27 @@ link_state_node* create_link_state_node(int destination, neighbor_list* neighbor
   
  
   return lsn;
+}
+
+
+link_state_node* add_link_state_node(int destID, neighbor_list* list) {
+    link_state_node* lsn = create_link_state_node(destID, list);
+    link_state_node* head = topology;
+
+    if(head->next == NULL) {
+        head->next = lsn;
+    }
+    else {
+        //new_node->next = root;
+        lsn->next = head;
+        head = lsn;
+		//root = new_node;
+
+    }
+
+    return head;
+
+    
 }
 
 
@@ -280,6 +301,8 @@ void* announceToNeighbors(void* unusedParam)
     }
 }
 
+
+
 //TODO change stuff here
 void* monitorNeighbors(void* unusedParam) {
   struct timespec sleepFor;
@@ -331,7 +354,9 @@ void listenForNeighbors()
 		short int destID = getDestination(data_pt);
 
 		inet_ntop(AF_INET, &theirAddr.sin_addr, fromAddr, 100);
-		
+		if(topology == NULL) {
+            topology = create_link_state_node(destID, first_next_neighbor);
+        }
 		short int heardFrom = -1;
 		if(strstr(fromAddr, "10.1.1."))
 		{
@@ -360,10 +385,9 @@ void listenForNeighbors()
 				printf("got my message, thanks bye %s\n", message);
 			}
 			else {
-                link_state_node* link_state = create_link_state_node(destID, first_neighbor);
                 
                 //first_next_neighbor??
-            pathList* paths = findPaths(link_state);
+            pathList* paths = findPaths(topology);
 
 				//find shortest path within my graph
 				//run Shortest path algo
