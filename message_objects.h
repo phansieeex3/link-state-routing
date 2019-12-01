@@ -12,14 +12,15 @@ typedef struct _neighbor_node {
 
 //my neighbor node list
 typedef struct _neighbor_list {
-  struct _neighbor_list* next;
-  struct _neighbor_list* prev;
+ 
   neighbor_node* neighbor_node; 
+   struct _neighbor_list* next;
+  struct _neighbor_list* prev;
 } neighbor_list;
 
 
 //link state node graph
-typedef struct _link_state_node {
+typedef struct _link_state_node  {
   int destination_ID; //vertex
  // int next_node;
  //int prev_node;
@@ -34,7 +35,7 @@ typedef struct _link_state_node {
 
 
 //link state announcement
-typedef struct _LSA {
+typedef struct _LSA{
   int node_ID;
   int neighbor_size;
   int sequence_number;

@@ -10,7 +10,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <pthread.h>
-#include "message_objects.h"
 
 
 extern int globalMyID;

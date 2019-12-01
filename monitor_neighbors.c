@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include "message_objects.h"
 #include "monitor_neighbors.h"
+#include "pathfinder.h"
 
 
 
@@ -111,13 +112,17 @@ neighbor_list* delete(neighbor_list* root, int neighbor_id) {
 		current->next = current->next;
 		current->next->prev = current->prev;
       }
+      return root;
+    }
     	current = current->next;
 
+  }
+ return root;
   
     }
-  }
-     return root;
-}
+  
+    
+
 
 
 //update
@@ -136,15 +141,11 @@ neighbor_list* update(neighbor_list* head, int neighbor_id, neighbor_node* new_n
 
 
 
-link_state_node* createLinkStateNode(int destination, int neighbor_node, int prev_node, int weight) {
+link_state_node* create_link_state_node(int destination, neighbor_list* neighbor_list) {
   link_state_node* lsn = (link_state_node*)malloc(sizeof(link_state_node));
-    lsn->neighbor_nodes->prev = prev_node;
- //weight
-  lsn->neighbor_nodes->neighbor_node->weight = weight;
-//destination id
-  lsn->destination_ID = destination;
-  //next
-  lsn->neighbor_nodes->neighbor_node->id = neighbor_node;
+    lsn->destination_ID = destination;
+    lsn->neighbor_nodes = neighbor_list;
+    lsn->next = NULL;
   
  
   return lsn;
@@ -242,36 +243,8 @@ LSA* convertLSA(void* buff) {
 
 }
 
-// message format LSA : id, sequence, neigh, neighbor_node (id, weight) format
-/*
-LSA* parseLSAforReceving(void* buff) {
-
-  LSA* lsp = (LSA*)malloc(sizeof(LSA));
- lsa->neighbor_size = ntohl(*((int*)(buff + 3 + 2 * sizeof(int))));
- //id, sequence, neighbor number, neighbor_node
-  lsp->node_id = ntohl(*((int*)(buff + 3)));
-  lsa->sequence_num = getSequenceNum(buff);
-
-  neighbor_node* new_neighbor_list = (neighbor_node*)malloc(sizeof(neighbor_node));
-  lsa->first_neighbor = NULL;
-  	int i = 0;
-
-	for(i; i< neighbor_size; i++) {
-	int id = ((neighbor_node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node)))->id;
-    int neigh_weight = ((neighbor_node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node)))->weight;
-    lsa->first_neighbor = insert(lsa->first_neighbor, setneighbor(id, neigh_weight));
-
-	}
-  return lsa;
-}*/
 
 
-
-neighbor_node* uppdate(neighbor_node* root, int neigbor_add, neighbor_node* new_node) {
-  root = delete(root, neigbor_add);
-  root = insert(root, new_node);
-  return root;
-}
 //Yes, this is terrible. It's also terrible that, in Linux, a socket
 //can't receive broadcast packets unless it's bound to INADDR_ANY,
 //which we can't do in this assignment.
@@ -387,6 +360,11 @@ void listenForNeighbors()
 				printf("got my message, thanks bye %s\n", message);
 			}
 			else {
+                link_state_node* link_state = create_link_state_node(destID, first_neighbor);
+                
+                //first_next_neighbor??
+            pathList* paths = findPaths(link_state);
+
 				//find shortest path within my graph
 				//run Shortest path algo
 //run diks***************
@@ -410,7 +388,7 @@ void listenForNeighbors()
 			char* message = recvBuf + 4 + sizeof(short int) ; // message on the rest
 
 			if(destID == globalMyID) {
-				printf("got my message, thanks bye %\n", message);
+				printf("got my message, thanks bye %s\n", message);
 			}
 			else {
 				//else send to destination

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "monitor_neighbors.h"
 #include "monitor_neighbors.c"
 
 
@@ -71,14 +70,7 @@ int main(int argc, char** argv)
 	
 	
 
-  neighbor_node** routing_table;
-	//creating my routing table
-	routing_table = (neighbor_node**)malloc(MAX*sizeof(neighbor_node*));
-	int j = 0;
-	for(; j < MAX; j++) {
-		routing_table[j] = NULL; //maximum size routing table
-	}
-	
+ 
 	
 //TODO: read and parse initial costs file. default to cost 1 if no entry for a neighbor_node. file may be empty.
      first_neighbor = NULL;
