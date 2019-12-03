@@ -19,7 +19,7 @@
 //my link list root
 neighbor_list* first_neighbor;
 neighbor_list* first_next_neighbor;
-link_state_node* topology;
+struct link_state_node* topology;
 
 neighbor_node* setNeighbor(int id, int weight) {
     neighbor_node* new_node = (neighbor_node*) malloc(sizeof(neighbor_node));
@@ -141,8 +141,9 @@ neighbor_list* update(neighbor_list* head, int neighbor_id, neighbor_node* new_n
 
 
 
+
 link_state_node* create_link_state_node(int destination, neighbor_list* neighbor_list) {
-  link_state_node* lsn = (link_state_node*)malloc(sizeof(link_state_node));
+   link_state_node* lsn = (link_state_node*) malloc(sizeof(link_state_node));
     lsn->destination_ID = destination;
     lsn->neighbor_nodes = neighbor_list;
     lsn->next = NULL;
@@ -152,8 +153,8 @@ link_state_node* create_link_state_node(int destination, neighbor_list* neighbor
 }
 
 
-link_state_node* add_link_state_node(int destID, neighbor_list* list) {
-    link_state_node* lsn = create_link_state_node(destID, list);
+struct link_state_node* add_link_state_node(int destID, neighbor_list* list) {
+    struct link_state_node* lsn = create_link_state_node(destID, list);
     link_state_node* head = topology;
 
     if(head->next == NULL) {
@@ -328,6 +329,10 @@ void* monitorNeighbors(void* unusedParam) {
 short int getDestination(char* buff) {
 	short int ip = ntohs(*((short int*)(buff + 4)));
 	return ip;
+}
+
+*link_state_node setUpTopology() {
+
 }
 
 void listenForNeighbors()
