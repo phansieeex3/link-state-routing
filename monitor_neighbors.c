@@ -20,6 +20,9 @@
 neighbor_list* first_neighbor;
 neighbor_list* first_next_neighbor;
 struct link_state_node* topology;
+int sequence_number ;
+int neighbor_size ;
+
 
 neighbor_node* setNeighbor(int id, int weight) {
     neighbor_node* new_node = (neighbor_node*) malloc(sizeof(neighbor_node));
@@ -30,7 +33,8 @@ neighbor_node* setNeighbor(int id, int weight) {
 
 }
 
-neighbor_list* setNeighborList(int id, int weight) {
+/*
+neighbor_list* setUpNeighbors(int id, int weight) {
 
     //neighbor_node* new_node = (neighbor_node*) malloc(sizeof(neighbor_node));
     neighbor_list* list = (neighbor_list*) malloc(sizeof(neighbor_list));
@@ -44,7 +48,30 @@ neighbor_list* setNeighborList(int id, int weight) {
 
     return list;
 
+}*/
+
+void setUpNeighbors(int neighbor_id) {  
+  //pthread_mutex_lock(&list_down_m);
+  neighbor_node* neigh = getNeighbor(first_next_neighbor, neighbor_id);
+  first_next_neighbor = delete(first_next_neighbor, neighbor_id);
+
+  if(neigh == NULL) //contains! 
+  {
+    first_neighbor = insert(first_neighbor, setneighbor(neighbor_id, 1));
+    neighbor_number++;
+  }
+  else 
+  {
+    first_neighbor = insert(first_neighbor, neigh);
+    neighbor_number++;
+  }
+  //deliverHistoryLSP(neighbor_id);
+
+  updateLSAtoNeighbors("");
+ 
+ // pthread_mutex_unlock(&list_down_m);
 }
+
 
 
 
@@ -63,6 +90,9 @@ int contains(neighbor_list* root, int neighbor_id) {
 
 //inserting my new neighbors in my link list
 neighbor_list* insert(neighbor_list* root, neighbor_list* new_node) {
+
+    new_node->next = NULL;
+    new_node->prev = NULL;
 
 	if(root == NULL) {
 		root = new_node;
@@ -143,35 +173,50 @@ neighbor_list* update(neighbor_list* head, int neighbor_id, neighbor_node* new_n
 
 
 link_state_node* create_link_state_node(int destination, neighbor_list* neighbor_list) {
-   link_state_node* lsn = (link_state_node*) malloc(sizeof(link_state_node));
-    lsn->destination_ID = destination;
-    lsn->neighbor_nodes = neighbor_list;
-    lsn->next = NULL;
+   link_state_node* lsn =  malloc(sizeof(link_state_node));
+   lsn->next = NULL;
+   lsn->destination_ID = destination;
+
+
+
+	while(neighbor_list != NULL) {
+        int id = neighbor_list->neighbor_node->id;
+        int neigh_weight =neighbor_list->neighbor_node->weight;
+        lsn->neighbor_nodes = insert(lsn->neighbor_nodes, setneighbor(id, neigh_weight));
+
+        neighbor_list = neighbor_list->next;
+
+
+    }
+	    
+	
+  //  lsn->next = NULL;
   
  
   return lsn;
 }
 
 
-struct link_state_node* add_link_state_node(int destID, neighbor_list* list) {
-    struct link_state_node* lsn = create_link_state_node(destID, list);
-    link_state_node* head = topology;
+link_state_node* add_link_state_node(int id, neighbor_list* list, link_state_node* graph) {
+    link_state_node* head = graph;
+    if(head->neighbor_nodes == NULL && head->next == NULL) {
+        while(list != NULL) {
+            int id = list->neighbor_node->id;
+            int weight = list->neighbor_node->weight;
+            head->neighbor_nodes = insert(head->neighbor_nodes, setneighbor(id, weight));
+            list->neighbor_node = list->next;
+        }
+    } else {
+          while(head->next != NULL) 
+             head = head->next; // loop to the end, append the next link
+          head->next = create_link_state_node(id, list);
+        }
+        return graph; 
+     }    
 
-    if(head->next == NULL) {
-        head->next = lsn;
-    }
-    else {
-        //new_node->next = root;
-        lsn->next = head;
-        head = lsn;
-		//root = new_node;
 
-    }
 
-    return head;
 
-    
-}
 
 
 //forward LSAs
@@ -197,12 +242,15 @@ if (recvBuf !=NULL) printf("resume, recvbuf %s", recvBuf);
     current = current->next;
   }
 }
+
+
+
 //update LASs
 void* updateLSAtoNeighbors(int neighbor) {
-  char* sendBuf = parseLSA();
+  char* sendBuf = getMyLSA();
 
   int buf = neighbor * sizeof(neighbor_node)+ 3 + sizeof(int) + sizeof(int) + sizeof(int) + sizeof(int);
-  neighbor_list* current = root_neighbor; //first neighbor in our list
+  neighbor_list* current = first_neighbor; //first neighbor in our list
 
   while(current != NULL) {
 	  int destination = current->neighbor_node->id;
@@ -228,6 +276,38 @@ void* updateLSAtoNeighbors(int neighbor) {
 
 }
 
+//for sending out my LSA
+LSA* getMyLSA() {
+
+    int i = 0;
+  int bufLen = 3 + sizeof(int) + sizeof(int) + sizeof(int) + sizeof(int) + neighbor_size*sizeof(neighbor_node);
+  char* sendBuf = (char*)malloc(bufLen);
+
+
+  int id = htonl(globalMyID);
+  int new_neighbor_num = htonl(neighbor_size);
+  int new_sequence_num = htonl(sequence_number);
+  strcpy(sendBuf, "LSA");
+  memcpy(sendBuf + 3, &id, sizeof(int));
+
+  memcpy(sendBuf + 3 + sizeof(int), &new_sequence_num, sizeof(int));
+
+  memcpy(sendBuf + 3 + 2 * sizeof(int), &new_neighbor_num, sizeof(int));
+
+  neighbor_list* current = first_neighbor;
+  
+  while(current != NULL) 
+  {
+    memcpy(sendBuf + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node), current->neighbor_node, sizeof(neighbor_node));
+    current = current->next;
+    i++;
+
+  }
+  return sendBuf;
+
+
+}
+
   
 // message format LSA : id, sequence, neigh, neighbor_node (id, weight) format
 
@@ -246,16 +326,16 @@ LSA* convertLSA(void* buff) {
 
 	//create neighbor neighbor_node list
 	neighbor_list* neighbor_list =  malloc(neighbor_size * sizeof(neighbor_node));
-	lsa->neighbor = NULL; 
+	lsa->neighbors = NULL; 
 
 	int i = 0;
 
-	int a; //java = 0, c= NULL
+	 //java = 0, c= NULL
 
 	for(i; i< neighbor_size; i++) {
 	int id = ((neighbor_node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node)))->id;
     int neigh_weight = ((neighbor_node*)(buff + 3 + 3 * sizeof(int) + i * sizeof(neighbor_node)))->weight;
-    lsa->neighbor = insert(lsa->neighbor, setneighbor(id, neigh_weight));
+    lsa->neighbors = insert(lsa->neighbors, setneighbor(id, neigh_weight));
 
 	}
 
@@ -279,11 +359,12 @@ void hackyBroadcast(const char* buf, int length)
 				  (struct sockaddr*)&globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
 }
 
+/*
 int getSequenceNum(void* LSPbuf) {
   int sn = ntohl(*((int*)(LSPbuf + 3 + sizeof(int))));
   return sn;
 }
-
+*/
 
 void* announceToNeighbors(void* unusedParam)
 {
@@ -292,8 +373,9 @@ void* announceToNeighbors(void* unusedParam)
 
    while(1)
     {
-      char* sendBuf = convertLSA("");
       int bufLen = 3 + sizeof(int) + sizeof(int) + sizeof(int) + neighbor_size * sizeof(neighbor_node);
+      
+      char* sendBuf = getMyLSA();
       hackyBroadcast(sendBuf, bufLen);
       pthread_mutex_lock(&sequence_number_thread);
       sequence_number++;
@@ -326,14 +408,14 @@ void* monitorNeighbors(void* unusedParam) {
 }
 
 
+
+
 short int getDestination(char* buff) {
 	short int ip = ntohs(*((short int*)(buff + 4)));
 	return ip;
 }
 
-*link_state_node setUpTopology() {
 
-}
 
 void listenForNeighbors()
 {
@@ -369,8 +451,8 @@ void listenForNeighbors()
 			
 			pthread_mutex_lock(&list_operation_thread);
 			if(!contains(first_neighbor, heardFrom)) { // or sequence is higher.....
-				//printf("setup neighbor_node %d\n", heardFrom);
-				setupNode(heardFrom); 
+				printf("setup neighbor_node %d\n", heardFrom);
+				setUpNeighbors(heardFrom); 
 			}
 			pthread_mutex_unlock(&list_operation_thread);
 					//TODO: this neighbor_node can consider heardFrom to be directly connected to it; do any such logic now.
@@ -392,21 +474,21 @@ void listenForNeighbors()
 			else {
                 
                 //first_next_neighbor??
-            pathList* paths = findPaths(topology);
-
+                   pathList* shortestPath = findPaths(topology);
+                   // int next_neighbor = paths->path->destination_id;
 				//find shortest path within my graph
 				//run Shortest path algo
 //run diks***************
-				char* sending_data = malloc(sizeof(bytesRecvd));
-				memcpy(message, "dest", 4);
-				short int destID_forward = htons(destID);
-	   			 memcpy(sending_data + 4, &destID_forward, sizeof(short int));
-	   		 	memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
+                    char* sending_data = malloc(sizeof(bytesRecvd));
+                    memcpy(message, "dest", 4);
+                    short int destID_forward = htons(destID);
+                    memcpy(sending_data + 4, &destID_forward, sizeof(short int));
+                    memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
 
-				//if(contains(topology, destID) < 0) "destination unreachable"
-				if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[next_neighbor->id], sizeof(globalNodeAddrs[next_neighbor->id])) < 0) perror("cannot send message in send");
-	   			 sprintf(log, "send dest %d nexthop %d message %s\n", destID_forward, next_neighbor, message);
-	 			 }
+                    //if(contains(topology, destID) < 0) "destination unreachable"
+                    if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[shortestPath->path->neighbor_id], sizeof(globalNodeAddrs[next_neighbor->id])) < 0) perror("cannot send message in send");
+                        sprintf(log, "send dest %d nexthop %d message %s\n", destID_forward, next_neighbor, message);
+                    }
 
 
 		}
@@ -429,7 +511,8 @@ void listenForNeighbors()
 	   			 memcpy(sending_data + 4, &destID_forward, sizeof(short int));
 	   		 	memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
 
-				//if(contains(topology, destID) < 0) "destination unreachable"
+				if(contains(first_neighbor, destID) < 0) {
+                    printf("destination unreachable");
 				if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[next_neighbor->id], sizeof(globalNodeAddrs[next_neighbor->id])) < 0) perror("cannot send message in send");
 	   			 sprintf(log, "send dest %d nexthop %d message %s\n", destID, next_neighbor, message);
 	 			 }
@@ -442,6 +525,8 @@ void listenForNeighbors()
 
 
 			}
+
+        }
 
 			
 
@@ -461,6 +546,8 @@ void listenForNeighbors()
 			else {
 				curNeighbor = setNeighbor(destID, new_weight);
 				first_next_neighbor = update(first_next_neighbor, destID, curNeighbor);
+
+                
 			}
 
 			//if neighbor_node cost contains in list then replace with new neighbor_node cost
@@ -485,6 +572,9 @@ void listenForNeighbors()
 			{
 				LSA_list[LSA_id] = new_LSA;
 				forwardLSP(recvBuf, bytesRecvd, heardFrom);
+
+                //insert my neighbor list....from others into my graph
+                topology = add_link_state_node(new_LSA->node_ID, new_LSA->neighbors, topology);
 
 			}
 			
