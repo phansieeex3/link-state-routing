@@ -10,6 +10,8 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <pthread.h>
+#include "message_objects.h"
+
 
 
 extern int globalMyID;
@@ -23,12 +25,14 @@ extern int globalSocketUDP;
 extern struct sockaddr_in globalNodeAddrs[256];
 
 
-//neighbor neighbor_node 
-extern neighbor_node* root_neighbor;
-extern int neighbor_number;
-extern neighbor_node* next_neighbor;
-extern int neighbor_size;
-extern int sequence_number;
+
+
+//my link list root
+neighbor_list* first_neighbor;
+neighbor_list* first_next_neighbor;
+struct link_state_node* topology;
+
+int neighbor_size ;
 
 
 extern neighbor_node** weight_table;
@@ -36,23 +40,43 @@ extern char* file_path;
 
 LSA** LSA_link_list; 
 
-//feelin cute, might delete later 
-int LSA_number = 0;
+
 //keeping track of my sequence number
-int sequence_number = 0;
+int sequence_numbers;
 
 
 //threads to wait while I do operations :D
-pthread_mutex_t list_operation_thread = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t list_next_thread = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t sequence_number_thread = PTHREAD_MUTEX_INITIALIZER;
+ pthread_mutex_t list_operation_thread;
+// pthread_mutex_t list_next_thread = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t sequence_number_thread;
 
 LSA** LSA_list;
 
 //set my neighbor if received
 
-neighbor_node* setNeighbor(int next_node, int weight);
+neighbor_node* setNeighbor(int id, int weight);
 //setting my neighbor_node
-neighbor_node* setNode(int next_node, int weight);
+//neighbor_node* setNode(int next_node, int weight);
 
+//function calls for different threads
+void listenForNeighbors();
+void* announceToNeighbors(void* unusedParam);
+void* monitorNeighborsAlive(void* unusedParam);
+void* monitorNeighbors(void* unusedParam);
 
+void setUpNeighbors(int neighbor_id);
+neighbor_list* insert(neighbor_list* root, neighbor_node* new_node);
+
+// The first step on the shortest path from the local node to the destination node
+typedef struct {
+    int destination_id; // The id of the destination node
+    int neighbor_id; // The first node on the shortest path to destination node
+} path;
+
+// Linked List of paths
+typedef struct _pathList {
+    path *path;
+    struct _pathList *next; // Next path in the list
+} pathList;
+
+pathList* findPaths(link_state_node* localNode);

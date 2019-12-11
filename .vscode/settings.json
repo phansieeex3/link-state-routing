@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "iterator": "c",
+        "deque": "c",
+        "functional": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "*.tcc": "c",
+        "pathfinder.h": "c",
+        "__locale": "c",
+        "thread": "c"
+    }
+}

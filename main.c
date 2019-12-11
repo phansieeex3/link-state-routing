@@ -2,16 +2,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#include "monitor_neighbors.c"
-
-
-//function calls for different threads
-void listenForNeighbors();
-void* announceToNeighbors(void* unusedParam);
-void* monitorNeighborsAlive(void* unusedParam);
-neighbor_list* setNeighborList(int next_node, int weight);
-neighbor_node* setNeighbor(int next_hop, int cost);
-neighbor_list* insert(neighbor_list* head, neighbor_list* new_node);
+#include "monitor_neighbors.h"
 
 
 const int MAX = 256;  
@@ -97,7 +88,7 @@ int main(int argc, char** argv)
 		
 		sscanf(buff, "%d %d", &uuid, &weight);
 		//save my weights and neighbors in a linklist
-		first_next_neighbor = insert(first_next_neighbor, setNeighborList(uuid, weight));
+		first_next_neighbor = insert(first_next_neighbor, setNeighbor(uuid, weight));
 	}
 	//socket() and bind() our socket. We will do all sendto()ing and recvfrom()ing on this one.
 	if((globalSocketUDP=socket(AF_INET, SOCK_DGRAM, 0)) < 0)
