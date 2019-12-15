@@ -22,6 +22,7 @@ typedef struct _neighbor_list {
 //link state node graph
 typedef struct _link_state_node  {
   int destination_ID; //vertex
+  int first_hop_ID;
   neighbor_list* neighbor_nodes;
   struct _link_state_node* next;
 } link_state_node;

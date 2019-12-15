@@ -47,8 +47,8 @@ void add_vertex (graph_t *g, int i) {
 }
  
 void add_edge (graph_t *g, int a, int b, int w) {
-    a = a - 'a';
-    b = b - 'a';
+    //a = a - 'a';
+    //b = b - 'a';
     add_vertex(g, a);
     add_vertex(g, b);
     vertex_t *v = g->vertices[a];
@@ -117,8 +117,8 @@ int pop_heap (heap_t *h) {
  
 void dijkstra (graph_t *g, int a, int b) {
     int i, j;
-    a = a - 'a';
-    b = b - 'a';
+    //a = a - 'a';
+    //b = b - 'a';
     for (i = 0; i < g->vertices_len; i++) {
         vertex_t *v = g->vertices[i];
         v->dist = INT_MAX;
@@ -167,6 +167,9 @@ void print_path (graph_t *g, int i) {
 
 // Uses Dijikstra's shortest path routing algorithm to find the shortest path to each other node
 pathList* findPaths(link_state_node* localNode) {
+
+
+
     /*
     // Free existing paths
     pathList *current = *paths;
@@ -205,7 +208,7 @@ pathList* findPaths(link_state_node* localNode) {
     print_path(g, 'f');
 
     */
-
+    
     pathList *head = NULL;
     head = malloc(sizeof(pathList));
     if (head == NULL) {
@@ -277,13 +280,131 @@ pathList* findPaths(link_state_node* localNode) {
  
 int main () {
     link_state_node *localNode = calloc(1, sizeof (link_state_node));
-    pathList *paths = findPaths(localNode);
-    if (paths == NULL) {
-        return -1;
-    }
+    link_state_node *itr = localNode;
+
+    // Node 1
+    itr->destination_ID = 1;
+    itr->neighbor_nodes = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->neighbor_node->id = 2;
+    itr->neighbor_nodes->neighbor_node->weight = 3;
+    itr->neighbor_nodes->prev = NULL;
+    itr->neighbor_nodes->next = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->next->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->next->neighbor_node->id = 3;
+    itr->neighbor_nodes->next->neighbor_node->weight = 1;
+    itr->neighbor_nodes->next->prev = itr->neighbor_nodes;
+    itr->neighbor_nodes->next->next = NULL;
+    itr->next = malloc(sizeof(link_state_node));
+    itr = itr->next;
     
-    printf("%d\n", paths->path->destination_id);
-    printf("%d\n", paths->next->path->destination_id);
+    // Node 2
+    itr->destination_ID = 2;
+    itr->neighbor_nodes = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->neighbor_node->id = 1;
+    itr->neighbor_nodes->neighbor_node->weight = 3;
+    itr->neighbor_nodes->prev = NULL;
+    itr->neighbor_nodes->next = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->next->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->next->neighbor_node->id = 3;
+    itr->neighbor_nodes->next->neighbor_node->weight = 1;
+    itr->neighbor_nodes->next->prev = itr->neighbor_nodes;
+    itr->neighbor_nodes->next->next = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->next->next->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->next->next->neighbor_node->id = 4;
+    itr->neighbor_nodes->next->next->neighbor_node->weight = 2;
+    itr->neighbor_nodes->next->next->prev = itr->neighbor_nodes->next;
+    itr->neighbor_nodes->next->next->next = NULL;
+    itr->next = malloc(sizeof(link_state_node));
+    itr = itr->next;
+
+    // Node 3
+    itr->destination_ID = 3;
+    itr->neighbor_nodes = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->neighbor_node->id = 1;
+    itr->neighbor_nodes->neighbor_node->weight = 1;
+    itr->neighbor_nodes->prev = NULL;
+    itr->neighbor_nodes->next = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->next->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->next->neighbor_node->id = 2;
+    itr->neighbor_nodes->next->neighbor_node->weight = 1;
+    itr->neighbor_nodes->next->prev = itr->neighbor_nodes;
+    itr->neighbor_nodes->next->next = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->next->next->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->next->next->neighbor_node->id = 4;
+    itr->neighbor_nodes->next->next->neighbor_node->weight = 7;
+    itr->neighbor_nodes->next->next->prev = itr->neighbor_nodes->next;
+    itr->neighbor_nodes->next->next->next = NULL;
+    itr->next = malloc(sizeof(link_state_node));
+    itr = itr->next;
+
+    // Node 4
+    itr->destination_ID = 4;
+    itr->neighbor_nodes = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->neighbor_node->id = 2;
+    itr->neighbor_nodes->neighbor_node->weight = 2;
+    itr->neighbor_nodes->prev = NULL;
+    itr->neighbor_nodes->next = malloc(sizeof(neighbor_list));
+    itr->neighbor_nodes->next->neighbor_node = malloc(sizeof(neighbor_node));
+    itr->neighbor_nodes->next->neighbor_node->id = 3;
+    itr->neighbor_nodes->next->neighbor_node->weight = 7;
+    itr->neighbor_nodes->next->prev = itr->neighbor_nodes;
+    itr->neighbor_nodes->next->next = NULL;
+    itr->next = NULL;
+
+
+
+    // Write network data to file
+    printf("C: Writing data...\n");
+    FILE *fp;
+    fp = fopen("./network_data.txt", "w");
+        // Iterate through linked_state_node's
+    link_state_node *current = localNode;
+    while (current != NULL) {
+        fprintf(fp, "%d,", current->destination_ID);
+        neighbor_list *neighbors = current->neighbor_nodes;
+        while (neighbors != NULL) {
+            int id = neighbors->neighbor_node->id;
+            int weight = neighbors->neighbor_node->weight;
+            fprintf(fp, "%d,%d,", id, weight);
+            neighbors = neighbors->next;
+        }  
+        fprintf(fp, "\n");
+        current = current->next;
+    }
+    fclose(fp);
+
+    // Run python code on file
+    int py_response = system("python pathfinder.py");
+    printf("Python Response: %d\n", py_response);
+
+    // Read data from file and create route from it
+    printf("C: Reading data...\n");
+    fp = fopen("./network_data.txt", "r");
+
+    while (!feof(fp)) {
+        int node_id = 0;
+        int first_hop_id = 0;
+        fscanf(fp, "%d:", &node_id);
+        printf("Reading in node_id: %d\n", node_id);
+        fscanf(fp, "%d", &first_hop_id);
+        printf("Reading in first_hop_id: %d\n", first_hop_id);
+
+        // Add to link_state_node list
+        current = localNode;
+        while (current != NULL) {
+            if (current->destination_ID == node_id) {
+                current->first_hop_ID = first_hop_id;
+                break;
+            }
+            current = current->next;
+        }
+    }
+
+    fclose(fp);
 
     return 0;
 }
