@@ -10,8 +10,8 @@ my $topoFileName = $ARGV[0];
 
 #gives SIOCSIFFLAGS: Cannot assign requested address first time, is fine second time...
 #so... just do it twice!
-`sudo ifconfig eth0:manager up 10.0.0.10 2>/dev/null`;
-`sudo ifconfig eth0:manager up 10.0.0.10 2>/dev/null`;
+`sudo ifconfig enp0s3:manager up 10.0.0.10 2>/dev/null`;
+`sudo ifconfig enp0s3:manager up 10.0.0.10 2>/dev/null`;
 
 open(TOPOFILE, "<$topoFileName") or die("$topoFileName does not exist.\n");
 while(my $curLine = <TOPOFILE>)
@@ -23,10 +23,10 @@ while(my $curLine = <TOPOFILE>)
 	my $addr0 = "10.1.1.$nodes[0]";
 	my $addr1 = "10.1.1.$nodes[1]";
 	
-	`sudo ifconfig eth0:$nodes[0] up $addr0 2>/dev/null`;
-	`sudo ifconfig eth0:$nodes[0] up $addr0 2>/dev/null`;
-	`sudo ifconfig eth0:$nodes[1] up $addr1 2>/dev/null`;
-	`sudo ifconfig eth0:$nodes[1] up $addr1 2>/dev/null`;
+	`sudo ifconfig enp0s3:$nodes[0] up $addr0 2>/dev/null`;
+	`sudo ifconfig enp0s3:$nodes[0] up $addr0 2>/dev/null`;
+	`sudo ifconfig enp0s3:$nodes[1] up $addr1 2>/dev/null`;
+	`sudo ifconfig enp0s3:$nodes[1] up $addr1 2>/dev/null`;
 	
 	`sudo iptables -A OUTPUT -s $addr0 -d $addr1 -j ACCEPT`;
 	`sudo iptables -A OUTPUT -s $addr1 -d $addr0 -j ACCEPT`;

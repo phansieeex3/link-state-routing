@@ -13,8 +13,8 @@
 #include <pthread.h>
 #include "message_objects.h"
 
-#ifndef MONITOR_NEIGHBORS_H_
-#define MONITOR_NEIGHBORS_H_
+#ifndef MONITOR_NEIGHBORS_H
+#define MONITOR_NEIGHBORS_H
 
 extern int globalMyID ;
 //last time you heard from each neighbor_node. TODO: you will want to monitor this
@@ -56,22 +56,18 @@ LSA** LSA_list;
 
 //set my neighbor if received
 
-
+typedef neighbor_node* setNeighbor(int id, int weight);
 //setting my neighbor_node
 //neighbor_node* setNode(int next_node, int weight);
 
 //function calls for different threads
+typedef void listenForNeighbors();
+typedef void* announceToNeighbors(void* unusedParam);
+typedef void* monitorNeighborsAlive(void* unusedParam);
+typedef void* monitorNeighbors(void* unusedParam);
+typedef neighbor_list* insert(neighbor_list* root, neighbor_node* new_neighbor_node);
 
-void listenForNeighbors();
-void* announceToNeighbors(void* unusedParam);
-void* monitorNeighborsAlive(void* unusedParam);
-void* monitorNeighbors(void* unusedParam);
-neighbor_list* insert(neighbor_list* root, neighbor_node* new_neighbor_node);
-
-neighbor_node* setNeighbor(int id, int weight);
-
-//void setUpNeighbors(int neighbor_id);
-
+typedef void setUpNeighbors(int neighbor_id);
 //neighbor_list* insert(neighbor_list* root, neighbor_node* new_node);
 
 // The first step on the shortest path from the local node to the destination node
@@ -86,9 +82,7 @@ typedef struct _pathList {
     struct _pathList *next; // Next path in the list
 } pathList;
 
-pathList* findPaths(link_state_node* localNode);
-
-
+typedef pathList* findPaths(link_state_node* localNode);
 
 
 #endif 

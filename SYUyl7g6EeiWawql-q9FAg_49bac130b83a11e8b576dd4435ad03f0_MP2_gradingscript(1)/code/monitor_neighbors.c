@@ -13,7 +13,6 @@
 #include "monitor_neighbors.h"
 
 
-
 pthread_mutex_t list_operation_thread = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sequence_number_thread = PTHREAD_MUTEX_INITIALIZER;
 
@@ -109,8 +108,8 @@ neighbor_list* setUpNeighbors(int id, int weight) {
 //inserting my new neighbors in my link list
 neighbor_list* insert(neighbor_list* root, neighbor_node* new_neighbor_node) {
 	neighbor_list * new_node;
-   	new_node->next = NULL;
-    	new_node->prev = NULL;
+    new_node->next = NULL;
+    new_node->prev = NULL;
 	new_node->neighbor_node = new_neighbor_node;
 
 	if(root == NULL) {

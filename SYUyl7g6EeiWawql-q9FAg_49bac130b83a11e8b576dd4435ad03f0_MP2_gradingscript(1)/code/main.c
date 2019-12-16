@@ -3,7 +3,6 @@
 #include <pthread.h>
 
 #include "monitor_neighbors.h"
-#include "message_objects.h"
 
 
 const int MAX = 256;  
@@ -18,6 +17,8 @@ int globalSocketUDP;
 struct sockaddr_in globalNodeAddrs[256];
 
 
+
+
 //my link list root
 neighbor_list* first_neighbor;
 neighbor_list* first_next_neighbor;
@@ -26,9 +27,7 @@ neighbor_list* first_next_neighbor;
 char* filename;
 
 int main(int argc, char** argv)
-
 {
-	printf("HERRO");
 	if(argc != 4)
 	{
 		
@@ -75,7 +74,7 @@ int main(int argc, char** argv)
 	 
 
 	 //get my neighbors...
-	do
+	for(;;) 
 	{
 		int weight;
 		int uuid;
@@ -88,12 +87,9 @@ int main(int argc, char** argv)
 		}
 		
 		sscanf(buff, "%d %d", &uuid, &weight);
-		first_next_neighbor = NULL;
 		//save my weights and neighbors in a linklist
-		first_next_neighbor=insert(first_next_neighbor, setNeighbor(uuid, weight));
-	} while(fgets(buff, 1024, initialcostsfile) != NULL);
-
-
+		first_next_neighbor = insert(first_next_neighbor, setNeighbor(uuid, weight));
+	}
 	//socket() and bind() our socket. We will do all sendto()ing and recvfrom()ing on this one.
 	if ( (globalSocketUDP=socket(AF_INET, SOCK_DGRAM, 0))  < 0)
 	{
@@ -102,11 +98,7 @@ int main(int argc, char** argv)
 	}
 	char myAddr[100];
 	struct sockaddr_in bindAddr;
-
-
 	sprintf(myAddr, "10.1.1.%d", globalMyID);	
-
-
 	memset(&bindAddr, 0, sizeof(bindAddr));
 	bindAddr.sin_family = AF_INET;
 	bindAddr.sin_port = htons(7777);
@@ -123,9 +115,9 @@ int main(int argc, char** argv)
 	pthread_t announcerThread;
 //pthread_t type address, aurgument attribute that we want new thread to contain, function pointer 
   	//pthread_create(&announcerThread,0, announceToNeighbors, (void*)0);
-	pthread_create(&announcerThread,NULL, announceToNeighbors, (void *)0);
+	pthread_create(&announcerThread,NULL, &announceToNeighbors, (void*)&announcerThread);
   	pthread_t monitorThread;
- 	pthread_create(&monitorThread,NULL, monitorNeighbors, (void *)0);
+ 	pthread_create(&monitorThread,NULL, &monitorNeighbors, (void*)&monitorThread);
 		
   	//good luck, have fun! 
  	 listenForNeighbors();
