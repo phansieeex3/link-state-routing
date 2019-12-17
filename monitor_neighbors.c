@@ -111,7 +111,8 @@ neighbor_list* setUpNeighbors(int id, int weight) {
 
 //inserting my new neighbors in my link list
 neighbor_list* insert(neighbor_list* root, neighbor_node* new_neighbor_node) {
-	neighbor_list * new_node;
+	
+	neighbor_list * new_node = (neighbor_list*) malloc(256*sizeof(neighbor_node));
    	new_node->next = NULL;
     	new_node->prev = NULL;
 	new_node->neighbor_node = new_neighbor_node;
@@ -129,6 +130,10 @@ neighbor_list* insert(neighbor_list* root, neighbor_node* new_neighbor_node) {
 
 	//return where i am currently
 	return root;
+
+
+
+	//return root;
 
 
 }
@@ -561,7 +566,7 @@ printf("************MESSAGE snd RECEIVED********* : %s \n" , message);
 			    //char* sending_data = malloc(sizeof(bytesRecvd));
 				char sending_data[4+sizeof(short int)+strlen(message)];
 				//strcpy(sending_data, "dest");
-			   memcpy(sending_data, "send", 4);
+			   memcpy(sending_data, "dest", 4);
 			    short int destID_forward = htons(destID);
 			printf("destID_forward %d \n", destID_forward);
 			    memcpy(sending_data + 4, &destID_forward, sizeof(short int));
@@ -579,7 +584,7 @@ printf("msg after message %s \n", sending_data);
 
 printf("*******sebd*********SENDING DATA:  %s \n", sending_data);
 
-                    if(sendto(globalSocketUDP, "send7hello", bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[shortest_next_hop], sizeof(globalNodeAddrs[shortest_next_hop])) < 0)
+                    if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[shortest_next_hop], sizeof(globalNodeAddrs[shortest_next_hop])) < 0)
 perror("cannot send message in send");
                         
            
@@ -629,6 +634,7 @@ WORK ON THISSSS MESSG FUCKED UP				memcpy(&ss, sendBuf+6, 4);
 				calculateShortestPaths(topology);
 				int shortest_next_hop = (int) topology->first_hop_ID;
 				//char* sending_data = malloc(sizeof(bytesRecvd));
+				/*
 			char sending_data[4+sizeof(short int)+sizeof(int)];
 				strcpy(sending_data, "send");
   				//memcpy(sending_data, "dest", 4);				
@@ -638,9 +644,9 @@ WORK ON THISSSS MESSG FUCKED UP				memcpy(&ss, sendBuf+6, 4);
 				printf("msg after destID_forward %s \n", sending_data);
 	   		 	memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
 				printf("msg after message %s \n", sending_data);
-				printf("************dest****SENDING DATA:  %s \n", sending_data); 
+				printf("************dest****SENDING DATA:  %s \n", sending_data); */
 			
-				if(sendto(globalSocketUDP, "send7hello", bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[shortest_next_hop], sizeof(globalNodeAddrs[shortest_next_hop])) < 0) perror("cannot send message in dest");
+				if(sendto(globalSocketUDP, recvBuf, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[shortest_next_hop], sizeof(globalNodeAddrs[shortest_next_hop])) < 0) perror("cannot send message in dest");
 	   			 
 	 			
 
