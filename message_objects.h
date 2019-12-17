@@ -5,14 +5,14 @@
 
 
 //my current node or all nodes
-typedef struct _neighbor_node {
+typedef struct neighbor_node {
   int id; // vertex
   int weight; //edge
 
 } neighbor_node;
 
 //my neighbor node list
-typedef struct _neighbor_list {
+typedef struct neighbor_list {
  
   neighbor_node* neighbor_node; 
    struct _neighbor_list* next;
@@ -21,15 +21,16 @@ typedef struct _neighbor_list {
 
 
 //link state node graph
-typedef struct _link_state_node  {
+typedef struct link_state_node  {
   int destination_ID; //vertex
+  int first_hop_ID;
   neighbor_list* neighbor_nodes;
   struct _link_state_node* next;
 } link_state_node;
 
 
 //link state announcement
-typedef struct _LSA {
+typedef struct LSA {
   int node_ID;
   int neighbor_size;
   int sequence_number;

@@ -28,7 +28,7 @@ char* filename;
 int main(int argc, char** argv)
 
 {
-	printf("HERRO");
+	
 	if(argc != 4)
 	{
 		

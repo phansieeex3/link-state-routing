@@ -10,13 +10,14 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <pthread.h>
+#include <limits.h>
 #include "monitor_neighbors.h"
 
 
 
 pthread_mutex_t list_operation_thread = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t sequence_number_thread = PTHREAD_MUTEX_INITIALIZER;
-
+pthread_mutex_t list_thread = PTHREAD_MUTEX_INITIALIZER;
 
 neighbor_node* setNeighbor(int id, int weight) {
     neighbor_node* new_node = (neighbor_node*) malloc(sizeof(neighbor_node));
@@ -74,17 +75,19 @@ void updateLSAtoNeighbors(int neighbor) {
 			{
 				printf("forwarded LSA\n");
 			}
-			else {
-				perror("ForwardLSA error");
-			}
+			//else {
+				//perror("ForwardLSA error");
+			//}
 
 	  }
 
 	  //incurrement my current neighbor_node
 	  current = current->next;
   }
-  sequence_numbers +=1;
 
+pthread_mutex_lock(&sequence_number_thread);
+  sequence_numbers +=1;
+pthread_mutex_unlock(&sequence_number_thread);
 
 
 }
@@ -166,32 +169,39 @@ neighbor_list* getNeighbor(neighbor_list* root, int neighbor_add) {
     current = current->next;
   }
 
-	return root;
+	  
+
+return NULL;
 }
+
+
 //deleting a neighbor_node
 neighbor_list* delete(neighbor_list* root, int neighbor_id) {
-  neighbor_list* current = root;
-  while(current != NULL) {
-    if(current->neighbor_node->id == neighbor_id) {
+  neighbor_list* current = root, *prev;
 
-      if(current->prev == NULL) {
-		root = current->next;
-      }
-      if(current->next == NULL) {
-			current->next = NULL;
-      }
-      else {
-		current->next = current->next;
-		current->next->prev = current->prev;
-      }
-      return root;
-    }
-    	current = current->next;
+//delete my root
+if(current != NULL && current->neighbor_node->id == neighbor_id) {
+  root = current->next;
+ free(current);
+ return root;
+}
+
+  while(current != NULL && current->neighbor_node->id != neighbor_id) 
+  {
+    prev = current;
+    current = current->next;
 
   }
- return root;
+
+  if(current == NULL ) return root; //did not find 
   
-    }
+   prev->next = current->next;
+
+	free(current);
+
+return root;
+
+}
   
     
 
@@ -208,25 +218,34 @@ neighbor_list* update(neighbor_list* head, int neighbor_id, neighbor_node* new_n
   //printf("root == NULL %d\n", root == NULL);
    
 void setUpNeighbors(int neighbor_id) {  
-  //pthread_mutex_lock(&list_down_m);
+
+  pthread_mutex_lock(&list_operation_thread);
+
+//nearest neigh
   neighbor_list* neigh = getNeighbor(first_next_neighbor, neighbor_id);
+
+//delete
   first_next_neighbor = delete(first_next_neighbor, neighbor_id);
 
   if(neigh == NULL) //contains! 
   {
     first_neighbor = insert(first_neighbor, setNeighbor(neighbor_id, 1));
+	printf("INSERTING SET UP NEIGHBORS NO NEIGHBOR");
     neighbor_size++;
   }
   else 
   {
     first_neighbor = insert(first_neighbor, neigh->neighbor_node);
+	printf("INSERTING SET UP NEIGHBORS yes NEIGHBOR");
     neighbor_size++;
   }
-  //deliverHistoryLSP(neighbor_id);
 
-  updateLSAtoNeighbors(-1);
+  printf("NEIGHBOR SIZE    ======================== %d \n", neighbor_size);
+
+
+  updateLSAtoNeighbors(0);
  
- // pthread_mutex_unlock(&list_down_m);
+  pthread_mutex_unlock(&list_operation_thread);
 }
 
 
@@ -238,11 +257,11 @@ link_state_node* create_link_state_node(int destination, neighbor_list* neighbor
    lsn->next = NULL;
    lsn->destination_ID = destination;
 
-
-
+   if(neighbor_list == NULL) printf("CREATELINK STATE NODE CANNOT, NEIGHBORLIST IS NULL");
 	while(neighbor_list != NULL) {
         int id = neighbor_list->neighbor_node->id;
         int neigh_weight =neighbor_list->neighbor_node->weight;
+	printf(" 	CREATE LINK STATE NODE inserting to my topology id %d weight %d \n", id, neigh_weight); 
         lsn->neighbor_nodes = insert(lsn->neighbor_nodes, setNeighbor(id, neigh_weight));
 
         neighbor_list = neighbor_list->next;
@@ -259,7 +278,27 @@ link_state_node* create_link_state_node(int destination, neighbor_list* neighbor
 
 
 link_state_node* add_link_state_node(int id, neighbor_list* list, link_state_node* graph) {
-    link_state_node* head = graph;
+	
+
+	//int id = list->neighbor_node->id;
+	//int weight = list->neighbor_node->weight;
+
+	//neighbor_list* new_data = insert(graph->neighbor_nodes, setNeighbor(id, weight));
+
+	link_state_node* new_link = create_link_state_node(id, list);
+	printf(" 	ADDING LINK STATE NODE inserting to my topology id %d  \n", id); 
+
+	//make new node as top of list
+	new_link->next = graph;
+	graph = new_link;
+
+
+return graph;
+	
+	
+		
+    /*
+link_state_node* head = graph;
     if(head->neighbor_nodes == NULL && head->next == NULL) {
         while(list != NULL) {
             int id = list->neighbor_node->id;
@@ -272,8 +311,10 @@ link_state_node* add_link_state_node(int id, neighbor_list* list, link_state_nod
              head = head->next; // loop to the end, append the next link
           head->next = create_link_state_node(id, list);
         }
-        return graph; 
-     }    
+        return graph; */
+
+	
+   }    
 
 
 
@@ -297,7 +338,7 @@ if (recvBuf !=NULL) printf("resume, recvbuf %s", recvBuf);
 		printf("forwarded LSA\n");
       }
 	  else {
-		  perror("ForwardLSA error");
+		  perror("ForwardLSA error inside FORWARd lsa");
 	  }
     }
     current = current->next;
@@ -354,11 +395,20 @@ LSA* convertLSA(void* buff) {
 //which we can't do in this assignment.
 void hackyBroadcast(const char* buf, int length)
 {
+	//printf("hackybroadcast %s", buf);
+
 	int i;
 	for(i=0;i<256;i++)
-		if(i != globalMyID) //(although with a real broadcast you would also get the packet yourself)
-			sendto(globalSocketUDP, buf, length, 0,
-				  (struct sockaddr*)&globalNodeAddrs[i], sizeof(globalNodeAddrs[i]));
+		if(i != globalMyID) { //(although with a real broadcast you would also get the packet yourself)
+			//sendto(globalSocketUDP, buf, length, 0,(struct sockaddr*)&globalNodeAddrs[i], sizeof(globalNodeAddrs[i]) );
+		if(sendto(globalSocketUDP, buf, length, 0,(struct sockaddr*)&globalNodeAddrs[i], sizeof(globalNodeAddrs[i]) ) > 0) 
+			  {
+				printf("forwarded LSA\n");
+		      }
+			  //else {
+				 // perror("ForwardLSA error");
+			  //}
+			}
 }
 
 
@@ -430,6 +480,21 @@ void listenForNeighbors()
 	char log[1024];
 
 	int bytesRecvd;
+LSA_list = (LSA**) malloc(256* sizeof(LSA*));
+
+int x;
+for(x = 0; x< 256; x++) {
+ LSA_list[x] = NULL;
+
+}
+
+printf("FILENAMEEEEEEE %s \n", filename);
+char str[] = ".txt";
+strncat(filename, &str, 4);
+FILE* fp = fopen(filename , "w+");
+
+
+
 	while(1)
 	{
 		theirAddrLen = sizeof(theirAddr);
@@ -442,23 +507,26 @@ void listenForNeighbors()
 		
 		void* data_pt = (void*) recvBuf;
 
-		short int destID = getDestination(data_pt);
+		//short int destID = getDestination(data_pt);
+		short int destID = ntohs(*((short int*) (data_pt+4)));
+		printf("command : %s \n" , recvBuf);
+		printf("destination ID %d \n", destID);
 
 		inet_ntop(AF_INET, &theirAddr.sin_addr, fromAddr, 100);
 		if(topology == NULL) {
-            topology = create_link_state_node(destID, first_next_neighbor);
+            topology = create_link_state_node(destID, first_neighbor);
         }
 		short int heardFrom = -1;
 		if(strstr(fromAddr, "10.1.1."))
 		{
 			heardFrom = atoi(strchr(strchr(strchr(fromAddr,'.')+1,'.')+1,'.')+1);
 			
-			pthread_mutex_lock(&list_operation_thread);
+			pthread_mutex_lock(&list_thread);
 			if(!contains(first_neighbor, heardFrom)) { // or sequence is higher.....
 				printf("setup neighbor_node %d\n", heardFrom);
 				setUpNeighbors(heardFrom); 
 			}
-			pthread_mutex_unlock(&list_operation_thread);
+			pthread_mutex_unlock(&list_thread);
 					//TODO: this neighbor_node can consider heardFrom to be directly connected to it; do any such logic now.
 			
 			//record that we heard from heardFrom just now.
@@ -469,57 +537,118 @@ void listenForNeighbors()
 		//send format: 'send'<4 ASCII bytes>, destID<net order 2 byte signed>, <some ASCII message>
 		if(!strncmp(recvBuf, "send", 4))
 		{
+			printf("SENDDDDDDD****** \n");
 			//send format: 'send'<4 ASCII bytes>, destID<net order 2 byte signed>, <some ASCII message>
-			char* message = recvBuf + 4 + sizeof(short int) ; // message on the rest
-//run diks***************
+			
+
+			char* message = (char *) malloc (bytesRecvd);
+			memcpy(message, data_pt + 4 + sizeof(short int ) , bytesRecvd - 6);
+int msgLen = 4+sizeof(short int)+strlen(message);
+			char* sendBuf = malloc(msgLen);
+			
+			message[bytesRecvd - 6] = '\0';
+			
+printf("************MESSAGE snd RECEIVED********* : %s \n" , message);
+
 			if(destID == globalMyID) {
+				sprintf(log, "receive packet message %s \n", message);
 				printf("got my message, thanks bye %s\n", message);
-			}
-			else {
-                
-                //first_next_neighbor??
-                   pathList* shortestPath = findPaths(topology);
-                   // int first_next_neighbor = paths->path->destination_id;
-				//find shortest path within my graph
-				//run Shortest path algo
-//run diks***************
-                    char* sending_data = malloc(sizeof(bytesRecvd));
-                    memcpy(message, "dest", 4);
-                    short int destID_forward = htons(destID);
-                    memcpy(sending_data + 4, &destID_forward, sizeof(short int));
-                    memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
+			}else {
+			
+   	topology = create_link_state_node(destID, first_neighbor);
+			calculateShortestPaths(topology);
+		          
+			    //char* sending_data = malloc(sizeof(bytesRecvd));
+				char sending_data[4+sizeof(short int)+strlen(message)];
+				//strcpy(sending_data, "dest");
+			   memcpy(sending_data, "send", 4);
+			    short int destID_forward = htons(destID);
+			printf("destID_forward %d \n", destID_forward);
+			    memcpy(sending_data + 4, &destID_forward, sizeof(short int));
+		printf("msg after destID_forward %s \n", sending_data);
+			    memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
+printf("msg after message %s \n", sending_data);
+			    int shortest_next_hop = (int) topology->first_hop_ID;
 
-                    //if(contains(topology, destID) < 0) "destination unreachable"
-                    if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[shortestPath->path->neighbor_id], sizeof(globalNodeAddrs[first_next_neighbor->neighbor_node->id])) < 0) perror("cannot send message in send");
-                        sprintf(log, "send dest %d nexthop %d message %s\n", destID_forward, first_next_neighbor, message);
-                    }
+		            if(contains(topology->neighbor_nodes, shortest_next_hop) == 10) {
+				sprintf(log, "unreachable dest %d\n", destID);
+				printf("%s", log);
+				fwrite(log, 1, strlen(log), fp);
 
+				}
+
+printf("*******sebd*********SENDING DATA:  %s \n", sending_data);
+
+                    if(sendto(globalSocketUDP, "send7hello", bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[shortest_next_hop], sizeof(globalNodeAddrs[shortest_next_hop])) < 0)
+perror("cannot send message in send");
+                        
+           
+				sprintf(log, "send dest %d nexthop %d message %s\n", destID_forward, shortest_next_hop, message);  
+
+}
+
+			
+
+			printf("%s", log);
+			fwrite(log, 1, strlen(log), fp);
 
 		}
+
+
+
 		else if(!strncmp(recvBuf, "dest", 4)) {
+printf("DESTTTTTTT****** \n");
 			//TODO send the requested message to the requested destination neighbor_node
 			// ALLOCATE SPACE FOR MSH
 			//if my packet , print i have received
-			char* message = recvBuf + 4 + sizeof(short int) ; // message on the rest
+			//char* message = (char *) malloc (bytesRecvd - 5);
+			//memcpy(message, data_pt + 4 + sizeof(short int ) , bytesRecvd - 6);
 
+			char* message = (char *) malloc (bytesRecvd  );
+			memcpy(message, data_pt + 4 + sizeof(short int ) , bytesRecvd - 6);
+			
+			message[bytesRecvd - 6] = '\0';
+
+			printf("************MESSAGE dest RECEIVED********* : %s \n" , message);
 			if(destID == globalMyID) {
+				sprintf(log, "receive packet message %s \n", message);
 				printf("got my message, thanks bye %s\n", message);
 			}
 			else {
-				//else send to destination
-			//caclulate path with dijstra
-					//run diks***************
-				char* sending_data = malloc(sizeof(bytesRecvd));
-				memcpy(message, "dest", 4);
-				short int destID_forward = htons(destID);
-	   			 memcpy(sending_data + 4, &destID_forward, sizeof(short int));
-	   		 	memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
 
-				if(contains(first_neighbor, destID) < 0) {
-                    printf("destination unreachable");
-				if(sendto(globalSocketUDP, sending_data, bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[first_next_neighbor->neighbor_node->id], sizeof(globalNodeAddrs[first_next_neighbor->neighbor_node->id])) < 0) perror("cannot send message in send");
-	   			 sprintf(log, "send dest %d nexthop %d message %s\n", destID, first_next_neighbor, message);
-	 			 }
+/*****
+				char sendBuf[4+sizeof(short int)+sizeof(int)];
+				strcpy(sendBuf, "cost");
+				memcpy(sendBuf+4, &destID, sizeof(short int));
+				memcpy(sendBuf+4+sizeof(short int), &no_newCost, sizeof(int));
+				int ss;
+WORK ON THISSSS MESSG FUCKED UP				memcpy(&ss, sendBuf+6, 4);
+*/
+
+				topology = create_link_state_node(destID, first_neighbor);
+				calculateShortestPaths(topology);
+				int shortest_next_hop = (int) topology->first_hop_ID;
+				//char* sending_data = malloc(sizeof(bytesRecvd));
+			char sending_data[4+sizeof(short int)+sizeof(int)];
+				strcpy(sending_data, "send");
+  				//memcpy(sending_data, "dest", 4);				
+				short int destID_forward = htons(destID);
+				printf("destID_forward %d \n", destID_forward);
+	   			 memcpy(sending_data + 4, &destID_forward, sizeof(short int));
+				printf("msg after destID_forward %s \n", sending_data);
+	   		 	memcpy(sending_data + 4 + sizeof(short int), message, strlen(message));
+				printf("msg after message %s \n", sending_data);
+				printf("************dest****SENDING DATA:  %s \n", sending_data); 
+			
+				if(sendto(globalSocketUDP, "send7hello", bytesRecvd, 0, (struct sockaddr*)&globalNodeAddrs[shortest_next_hop], sizeof(globalNodeAddrs[shortest_next_hop])) < 0) perror("cannot send message in dest");
+	   			 
+	 			
+
+sprintf(log, "send dest %d nexthop %d message %s\n", destID, shortest_next_hop, message);
+
+}
+			printf("%s", log);
+			fwrite(log, 1, strlen(log), fp);
 			//convert ip address 
 			//check if in table and part of my toplogy
 			//if not then it is untreachable then log it
@@ -528,7 +657,7 @@ void listenForNeighbors()
 			//try to sendto destination and log it
 
 
-			}
+			
 
         }
 
@@ -538,6 +667,8 @@ void listenForNeighbors()
 		//'weight'<4 ASCII bytes>, destID<net order 2 byte signed> newweight<net order 4 byte signed>
 		//new weight to your neighbor
 		else if(!strncmp(recvBuf, "cost", 4)) {
+
+printf("COOOOOSSSTTTT****** \n");
 			//update my neighbors with new cost
 			int new_weight = ntohl(*(int*)(data_pt + 4 + sizeof(short int)));
 			neighbor_node* curNeighbor;
@@ -562,10 +693,12 @@ void listenForNeighbors()
 		}
 
 		else if(!strncmp(recvBuf, "LSA", 3)) {
+
+printf("LSAAAAAAAAAA****** \n");
 			//get lsa information
 			//if new LSA or sequence is greater than my current sequence
 			//forward my LSA
-		
+			pthread_mutex_lock(&list_thread);
 			LSA* new_LSA = convertLSA(data_pt);
 
 			int LSA_id = new_LSA->node_ID;
@@ -578,297 +711,69 @@ void listenForNeighbors()
 				forwardLSA(recvBuf, bytesRecvd, heardFrom);
 
                 //insert my neighbor list....from others into my graph
-                topology = add_link_state_node(new_LSA->node_ID, new_LSA->neighbors, topology);
-
+                //topology = add_link_state_node(new_LSA->node_ID, new_LSA->neighbors, topology);
+//pthread_mutex_unlock(&list_thread);
 			}
 			
 			//fflush(fp);
     	}
 
 		}
+
 		
-		//TODO now check for the various types of packets you use in your own protocol
-		//else if(!strncmp(recvBuf, "your other message types", ))
-		// ... 
+		
+		fclose(fp);
 		close(globalSocketUDP);
 	}
-	//(should never reach here)
 	
 
 
+void calculateShortestPaths(link_state_node *localNode) {
+    // Write network data to file
+    FILE *fp;
+    fp = fopen("./network_data.txt", "w");
+        // Iterate through linked_state_node's
+    link_state_node *current = localNode;
+    while (current != NULL) {
+        fprintf(fp, "%d,", current->destination_ID);
+	printf("in calculate shortest path current destID : %d \n" , current->destination_ID);
+        neighbor_list *neighbors = current->neighbor_nodes;
+        while (neighbors != NULL) {
+            int id = neighbors->neighbor_node->id;
+            int weight = neighbors->neighbor_node->weight;
+            fprintf(fp, "%d,%d,", id, weight);
+		//printf("in calculate shortest path current destID : %d \n" , current->destination_ID);
+            neighbors = neighbors->next;
+        }  
+        fprintf(fp, "\n");
+        current = current->next;
+    }
+    fclose(fp);
 
+    // Run python code on file
+    int py_response = system("python3 pathfinder.py");
+    printf("Python Response: %d\n", py_response);
 
-/*
-typedef struct {
-    int vertex;
-    int weight;
-} edge_t;
- 
-typedef struct {
-    edge_t **edges;
-    int edges_len;
-    int edges_size;
-    int dist;
-    int prev;
-    int visited;
-} vertex_t;
- 
-typedef struct {
-    vertex_t **vertices;
-    int vertices_len;
-    int vertices_size;
-} graph_t;
- 
-typedef struct {
-    int *data;
-    int *prio;
-    int *index;
-    int len;
-    int size;
-} heap_t;
- 
-void add_vertex (graph_t *g, int i) {
-    if (g->vertices_size < i + 1) {
-        int size = g->vertices_size * 2 > i ? g->vertices_size * 2 : i + 4;
-        g->vertices = realloc(g->vertices, size * sizeof (vertex_t *));
-        for (int j = g->vertices_size; j < size; j++)
-            g->vertices[j] = NULL;
-        g->vertices_size = size;
-    }
-    if (!g->vertices[i]) {
-        g->vertices[i] = calloc(1, sizeof (vertex_t));
-        g->vertices_len++;
-    }
-}
- 
-void add_edge (graph_t *g, int a, int b, int w) {
-    a = a - 'a';
-    b = b - 'a';
-    add_vertex(g, a);
-    add_vertex(g, b);
-    vertex_t *v = g->vertices[a];
-    if (v->edges_len >= v->edges_size) {
-        v->edges_size = v->edges_size ? v->edges_size * 2 : 4;
-        v->edges = realloc(v->edges, v->edges_size * sizeof (edge_t *));
-    }
-    edge_t *e = calloc(1, sizeof (edge_t));
-    e->vertex = b;
-    e->weight = w;
-    v->edges[v->edges_len++] = e;
-}
- 
-heap_t *create_heap (int n) {
-    heap_t *h = calloc(1, sizeof (heap_t));
-    h->data = calloc(n + 1, sizeof (int));
-    h->prio = calloc(n + 1, sizeof (int));
-    h->index = calloc(n, sizeof (int));
-    return h;
-}
- 
-void push_heap (heap_t *h, int v, int p) {
-    int i = h->index[v] == 0 ? ++h->len : h->index[v];
-    int j = i / 2;
-    while (i > 1) {
-        if (h->prio[j] < p)
-            break;
-        h->data[i] = h->data[j];
-        h->prio[i] = h->prio[j];
-        h->index[h->data[i]] = i;
-        i = j;
-        j = j / 2;
-    }
-    h->data[i] = v;
-    h->prio[i] = p;
-    h->index[v] = i;
-}
- 
-int min (heap_t *h, int i, int j, int k) {
-    int m = i;
-    if (j <= h->len && h->prio[j] < h->prio[m])
-        m = j;
-    if (k <= h->len && h->prio[k] < h->prio[m])
-        m = k;
-    return m;
-}
- 
-int pop_heap (heap_t *h) {
-    int v = h->data[1];
-    int i = 1;
-    while (1) {
-        int j = min(h, h->len, 2 * i, 2 * i + 1);
-        if (j == h->len)
-            break;
-        h->data[i] = h->data[j];
-        h->prio[i] = h->prio[j];
-        h->index[h->data[i]] = i;
-        i = j;
-    }
-    h->data[i] = h->data[h->len];
-    h->prio[i] = h->prio[h->len];
-    h->index[h->data[i]] = i;
-    h->len--;
-    return v;
-}
- 
-void dijkstra (graph_t *g, int a, int b) {
-    int i, j;
-    a = a - 'a';
-    b = b - 'a';
-    for (i = 0; i < g->vertices_len; i++) {
-        vertex_t *v = g->vertices[i];
-        v->dist = INT_MAX;
-        v->prev = 0;
-        v->visited = 0;
-    }
-    vertex_t *v = g->vertices[a];
-    v->dist = 0;
-    heap_t *h = create_heap(g->vertices_len);
-    push_heap(h, a, v->dist);
-    while (h->len) {
-        i = pop_heap(h);
-        if (i == b)
-            break;
-        v = g->vertices[i];
-        v->visited = 1;
-        for (j = 0; j < v->edges_len; j++) {
-            edge_t *e = v->edges[j];
-            vertex_t *u = g->vertices[e->vertex];
-            if (!u->visited && v->dist + e->weight <= u->dist) {
-                u->prev = i;
-                u->dist = v->dist + e->weight;
-                push_heap(h, e->vertex, u->dist);
+    // Read data from file and create route from it
+    fp = fopen("./network_data.txt", "r");
+
+    while (!feof(fp)) {
+        int node_id = 0;
+        int first_hop_id = 0;
+        fscanf(fp, "%d:", &node_id);
+        fscanf(fp, "%d", &first_hop_id);
+
+        // Add to link_state_node list
+        current = localNode;
+        while (current != NULL) {
+            if (current->destination_ID == node_id) {
+                current->first_hop_ID = first_hop_id;
+                break;
             }
+            current = current->next;
         }
     }
-}
- 
-void print_path (graph_t *g, int i) {
-    int n, j;
-    vertex_t *v, *u;
-    i = i - 'a';
-    v = g->vertices[i];
-    if (v->dist == INT_MAX) {
-        printf("no path\n");
-        return;
-    }
-    for (n = 1, u = v; u->dist; u = g->vertices[u->prev], n++)
-        ;
-    char *path = malloc(n);
-    path[n - 1] = 'a' + i;
-    for (j = 0, u = v; u->dist; u = g->vertices[u->prev], j++)
-        path[n - j - 2] = 'a' + u->prev;
-    printf("%d %.*s\n", v->dist, n, path);
-}
 
-*/
-
-// Uses Dijikstra's shortest path routing algorithm to find the shortest path to each other node
-pathList* findPaths(link_state_node* localNode) {
-    /*
-    // Free existing paths
-    pathList *current = *paths;
-    while (current != NULL) {
-        free(current->path);
-        pathList *prev = current;
-        current = current->next;
-        free (prev);
-    }*/
-
-    /*
-    // Initial Graph generation
-    graph_t *g = calloc(1, sizeof (graph_t));
-    
-    add_edge(g, 'a', 'b', 7);
-    add_edge(g, 'a', 'c', 9);
-    add_edge(g, 'a', 'f', 14);
-    add_edge(g, 'b', 'c', 10);
-    add_edge(g, 'b', 'd', 15);
-    add_edge(g, 'c', 'd', 11);
-    add_edge(g, 'c', 'f', 2);
-    add_edge(g, 'd', 'e', 6);
-    add_edge(g, 'e', 'f', 9);
-    
-    dijkstra(g, 'a', 'a');
-    print_path(g, 'a');
-    dijkstra(g, 'a', 'b');
-    print_path(g, 'b');
-    dijkstra(g, 'a', 'c');
-    print_path(g, 'c');
-    dijkstra(g, 'a', 'd');
-    print_path(g, 'd');
-    dijkstra(g, 'a', 'e');
-    print_path(g, 'e');
-    dijkstra(g, 'a', 'f');
-    print_path(g, 'f');
-
-    */
-
-    pathList *head = NULL;
-    head = malloc(sizeof(pathList));
-    if (head == NULL) {
-        return NULL;
-    }
-
-    // Path 1
-    path *path1 = NULL;
-    path1 = malloc(sizeof(path));
-    if (path1 == NULL) {
-        return NULL;
-    }
-    path1->destination_id = 2;
-    path1->neighbor_id = 2;
-
-    // Path 2
-    path *path2 = NULL;
-    path2 = malloc(sizeof(path));
-    if (path2 == NULL) {
-        return NULL;
-    }
-    path2->destination_id = 3;
-    path2->neighbor_id = 3;
-
-    // Path 3
-    path *path3 = NULL;
-    path3 = malloc(sizeof(path));
-    if (path3 == NULL) {
-        return NULL;
-    }
-    path3->destination_id = 4;
-    path3->neighbor_id = 3;
-
-    // Path 4
-    path *path4 = NULL;
-    path4 = malloc(sizeof(path));
-    if (path4 == NULL) {
-        return NULL;
-    }
-    path4->destination_id = 5;
-    path4->neighbor_id = 3;
-
-    // Path 5
-    path *path5 = NULL;
-    path5 = malloc(sizeof(path));
-    if (path5 == NULL) {
-        return NULL;
-    }
-    path5->destination_id = 6;
-    path5->neighbor_id = 3;
-    
-    pathList *current = head;
-    current->path = path1;
-    current->next = malloc(sizeof(pathList));
-    current = current->next;
-    current->path = path2;
-    current->next = malloc(sizeof(pathList));
-    current = current->next;
-    current->path = path3;
-    current->next = malloc(sizeof(pathList));
-    current = current->next;
-    current->path = path4;
-    current->next = malloc(sizeof(pathList));
-    current = current->next;
-    current->path = path5;
-
-    return head;
+    fclose(fp);
 }
  

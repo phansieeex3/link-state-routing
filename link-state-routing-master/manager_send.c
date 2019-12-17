@@ -17,7 +17,8 @@ int main(int argc, char** argv)
 		if(argc>2 && !strcmp(argv[2], "cost") && argc != 5)
 			fprintf(stderr, "Usage: %s destnode cost destID newCost\n\n", argv[0]);
 		if(argc>2 && !strcmp(argv[2], "send") && argc != 5)
-			fprintf(stderr, "Usage: %s destnode send destID \"the message\"\n\n", argv[0]);
+
+		  fprintf(stderr, "Usage: %s destnode send destID \"the message\"\n\n", argv[0]);
 		exit(1);
 	}
 
@@ -48,6 +49,7 @@ int main(int argc, char** argv)
 	destAddr.sin_family = AF_INET;
 	destAddr.sin_port = htons(7777);
 	inet_pton(AF_INET, tempaddr, &destAddr.sin_addr);
+
 	if(!strcmp(argv[2], "cost"))
 	{
 
@@ -58,24 +60,22 @@ int main(int argc, char** argv)
 		strcpy(sendBuf, "cost");
 		memcpy(sendBuf+4, &no_destID, sizeof(short int));
 		memcpy(sendBuf+4+sizeof(short int), &no_newCost, sizeof(int));
-		int ss;
-		memcpy(&ss, sendBuf+6, 4);
 
 		if(sendto(senderSocket, sendBuf, 4+sizeof(short int)+sizeof(int), 0,
 		          (struct sockaddr*)&destAddr, sizeof(destAddr)) < 0)
-			perror("send manager cost sendto() sendto()");
+			perror("sendto()");
 	}
 	else
 	{
 		int msgLen = 4+sizeof(short int)+strlen(argv[4]);
 		char* sendBuf = malloc(msgLen);
-
+		printf("%d\n", msgLen);
 		strcpy(sendBuf, "send");
 		memcpy(sendBuf+4, &no_destID, sizeof(short int));
 		memcpy(sendBuf+4+sizeof(short int), argv[4], strlen(argv[4]));
-		
+
 		if(sendto(senderSocket, sendBuf, msgLen, 0, (struct sockaddr*)&destAddr, sizeof(destAddr)) < 0)
-			perror(" send else managersendto()");
+			perror("sendto()");
 		free(sendBuf);
 	}
 	close(senderSocket);

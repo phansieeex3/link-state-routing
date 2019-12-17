@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 
 		if(sendto(senderSocket, sendBuf, 4+sizeof(short int)+sizeof(int), 0,
 		          (struct sockaddr*)&destAddr, sizeof(destAddr)) < 0)
-			perror("sendto()");
+			perror("send manager cost sendto()");
 	}
 	else
 	{
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
 		memcpy(sendBuf+4+sizeof(short int), argv[4], strlen(argv[4]));
 
 		if(sendto(senderSocket, sendBuf, msgLen, 0, (struct sockaddr*)&destAddr, sizeof(destAddr)) < 0)
-			perror("sendto()");
+			perror("send else manager sendto()");
 		free(sendBuf);
 	}
 	close(senderSocket);

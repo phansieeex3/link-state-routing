@@ -30,8 +30,8 @@ extern struct sockaddr_in globalNodeAddrs[256];
 
 
 //my link list root
-neighbor_list* first_neighbor;
-neighbor_list* first_next_neighbor;
+extern neighbor_list* first_neighbor;
+extern neighbor_list* first_next_neighbor;
 struct link_state_node* topology;
 
 int neighbor_size ;
@@ -41,7 +41,7 @@ extern neighbor_node** weight_table;
 extern char* file_path;
 
 LSA** LSA_link_list; 
-
+extern char* filename;
 
 //keeping track of my sequence number
 int sequence_numbers;
@@ -61,7 +61,7 @@ LSA** LSA_list;
 //neighbor_node* setNode(int next_node, int weight);
 
 //function calls for different threads
-
+void calculateShortestPaths(link_state_node *localNode);
 void listenForNeighbors();
 void* announceToNeighbors(void* unusedParam);
 void* monitorNeighborsAlive(void* unusedParam);
@@ -74,19 +74,8 @@ neighbor_node* setNeighbor(int id, int weight);
 
 //neighbor_list* insert(neighbor_list* root, neighbor_node* new_node);
 
-// The first step on the shortest path from the local node to the destination node
-typedef struct {
-    int destination_id; // The id of the destination node
-    int neighbor_id; // The first node on the shortest path to destination node
-} path;
 
-// Linked List of paths
-typedef struct _pathList {
-    path *path;
-    struct _pathList *next; // Next path in the list
-} pathList;
 
-pathList* findPaths(link_state_node* localNode);
 
 
 
